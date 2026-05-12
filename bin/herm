@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# herm — AI agent workstation on GCP.
+# Dispatcher. Each subcommand is its own file under cli/commands/.
+
+set -euo pipefail
+
+HERM_BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Resolve through symlinks (Makefile install creates a symlink):
+if [[ -L ${BASH_SOURCE[0]} ]]; then
+  HERM_BIN_DIR="$(cd "$(dirname "$(readlink "${BASH_SOURCE[0]}")")" && pwd)"
+fi
+HERM_REPO_ROOT="$(cd "$HERM_BIN_DIR/.." && pwd)"
+export HERM_REPO_ROOT
+
+# shellcheck source=../cli/lib.sh
+source "$HERM_REPO_ROOT/cli/lib.sh"
+
+usage() {
+  cat <<'EOF'
+herm — AI agent workstation on GCP
+
+USAGE:
+  herm <command> [args...]
+
+COMMANDS:
+  init               One-time: configure ~/.config/herm/config.toml, enable APIs, create state bucket
+  up                 terraform apply: provision VM, join tailnet
+  down               terraform destroy of VM + ephemeral resources (disk and backup bucket survive)
+  nuke               Destroy everything including persistent disk and backup bucket
+  status             Show VM status, tailnet name, last backup time
+  ssh                tailscale ssh herm@<hostname>
+  help               Show this message
+
+See docs/ for the threat model, security controls, cost breakdown, and troubleshooting.
+EOF
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  help|-h|--help)
+    usage
+    ;;
+  init|up|down|nuke|status|ssh)
+    cmd_file="$HERM_REPO_ROOT/cli/commands/${cmd}.sh"
+    if [[ ! -f $cmd_file ]]; then
+      herm::die "subcommand file missing: $cmd_file"
+    fi
+    # shellcheck disable=SC1090
+    source "$cmd_file"
+    "herm::cmd::$cmd" "$@"
+    ;;
+  *)
+    herm::err "unknown command: $cmd"
+    usage
+    exit 2
+    ;;
+esac
