@@ -5,6 +5,17 @@ herm::cmd::up() {
   herm::require_cmd terraform
   herm::require_cmd gcloud
 
+  # --replace-vm forces terraform to destroy + recreate the VM, which is the
+  # only way to re-trigger cloud-init after a metadata fix. The persistent disk
+  # and Secret Manager secret are not affected.
+  local replace_vm=0
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --replace-vm) replace_vm=1; shift ;;
+      *)            herm::die "unknown flag: $1" ;;
+    esac
+  done
+
   if [[ ! -f $HERM_CONFIG_PATH ]]; then
     herm::die "no config at $HERM_CONFIG_PATH — run 'herm init' first"
   fi
@@ -48,13 +59,21 @@ herm::cmd::up() {
     -backend-config="bucket=${state_bucket}" \
     -input=false
 
-  herm::tf apply \
-    -auto-approve \
-    -var "project_id=$project_id" \
-    -var "region=$region" \
-    -var "zone=$zone" \
-    -var "hostname=$hostname" \
+  local -a apply_args=(
+    apply
+    -auto-approve
+    -var "project_id=$project_id"
+    -var "region=$region"
+    -var "zone=$zone"
+    -var "hostname=$hostname"
     -var "tailscale_auth_key=$auth_key"
+  )
+  if [[ $replace_vm -eq 1 ]]; then
+    apply_args+=(-replace=google_compute_instance.herm)
+    herm::log "--replace-vm: forcing VM replacement to re-trigger cloud-init"
+  fi
+
+  herm::tf "${apply_args[@]}"
 
   unset TF_VAR_cloud_init_user_data
 
