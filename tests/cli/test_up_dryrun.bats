@@ -34,11 +34,11 @@ setup() {
   grep -q '/etc/systemd/system/herm-reaper.timer <<' <<<"$rendered"
 }
 
-@test "render_startup_script inlines hermes tool allowlist policy" {
+@test "render_startup_script inlines hermes tool-disable policy" {
   rendered="$(herm::__render_startup_script)"
   grep -q '/opt/herm/config/hermes-tools.yaml <<' <<<"$rendered"
-  grep -Fq 'allowed_tools:' <<<"$rendered"
-  grep -Fq 'denied_tools:' <<<"$rendered"
+  grep -Fq 'disabled_toolsets:' <<<"$rendered"
+  grep -Fq 'computer_use' <<<"$rendered"
 }
 
 @test "render_startup_script inlines every shipped skill SKILL.md" {
