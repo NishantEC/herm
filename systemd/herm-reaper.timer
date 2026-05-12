@@ -1,0 +1,10 @@
+[Unit]
+Description=herm — check tailnet for owner activity; halt VM if idle too long
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

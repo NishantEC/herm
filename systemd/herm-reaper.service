@@ -1,0 +1,10 @@
+[Unit]
+Description=herm — idle-VM auto-halt
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/herm-reaper.sh
+Nice=10

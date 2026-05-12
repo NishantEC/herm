@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# Reload systemd, enable hermes-agent + herm-backup.timer.
+# Reload systemd, enable hermes-agent + herm-backup.timer (+ herm-reaper.timer
+# if 09-install-reaper.sh already enabled it).
 
 set -euo pipefail
 
-# The unit files were laid down by cloud-init's write_files step. Just reload + enable.
+# Unit files were laid down earlier in the startup script. Reload + enable.
 systemctl daemon-reload
 
 systemctl enable --now hermes-agent.service
 systemctl enable --now herm-backup.timer
 
-# Lint check — verify both units parse:
+# Lint check — verify units parse:
 systemd-analyze verify /etc/systemd/system/hermes-agent.service
 systemd-analyze verify /etc/systemd/system/herm-backup.service
 systemd-analyze verify /etc/systemd/system/herm-backup.timer
+systemd-analyze verify /etc/systemd/system/herm-reaper.service
+systemd-analyze verify /etc/systemd/system/herm-reaper.timer
 
 echo "[99-systemd-units] hermes-agent active; backup timer scheduled"

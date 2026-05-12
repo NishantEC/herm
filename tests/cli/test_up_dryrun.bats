@@ -19,6 +19,9 @@ setup() {
   grep -q '/opt/herm/scripts/03-install-base.sh <<' <<<"$rendered"
   grep -q '/opt/herm/scripts/04-install-hermes.sh <<' <<<"$rendered"
   grep -q '/opt/herm/scripts/05-tailscale-join.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/07-seed-skills.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/08-tool-allowlist.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/09-install-reaper.sh <<' <<<"$rendered"
   grep -q '/opt/herm/scripts/99-systemd-units.sh <<' <<<"$rendered"
 }
 
@@ -27,6 +30,28 @@ setup() {
   grep -q '/etc/systemd/system/hermes-agent.service <<' <<<"$rendered"
   grep -q '/etc/systemd/system/herm-backup.service <<' <<<"$rendered"
   grep -q '/etc/systemd/system/herm-backup.timer <<' <<<"$rendered"
+  grep -q '/etc/systemd/system/herm-reaper.service <<' <<<"$rendered"
+  grep -q '/etc/systemd/system/herm-reaper.timer <<' <<<"$rendered"
+}
+
+@test "render_startup_script inlines hermes tool allowlist policy" {
+  rendered="$(herm::__render_startup_script)"
+  grep -q '/opt/herm/config/hermes-tools.yaml <<' <<<"$rendered"
+  grep -Fq 'allowed_tools:' <<<"$rendered"
+  grep -Fq 'denied_tools:' <<<"$rendered"
+}
+
+@test "render_startup_script inlines every shipped skill SKILL.md" {
+  rendered="$(herm::__render_startup_script)"
+  for skill in debug review-pr write-doc update-deps watch-repo summarize-day; do
+    grep -q "/opt/herm/skills/$skill/SKILL.md" <<<"$rendered" \
+      || (echo "missing skill: $skill" && false)
+  done
+}
+
+@test "render_startup_script declares HERM_REAPER_ENABLED" {
+  rendered="$(herm::__render_startup_script)"
+  grep -Eq 'export HERM_REAPER_ENABLED=[01]' <<<"$rendered"
 }
 
 @test "render_startup_script preserves literal \$VAR refs in inlined script bodies" {
@@ -39,11 +64,17 @@ setup() {
 
 @test "render_startup_script ends by invoking all step scripts in order" {
   rendered="$(herm::__render_startup_script)"
-  # Capture only the tail after the last heredoc close.
-  tail="$(awk '/^__HERM_FILE__$/{found=NR} END{print found}' <<<"$rendered")"
-  [[ -n "$tail" ]]
-  invocation_block="$(tail -n +"$tail" <<<"$rendered")"
+  # Capture only the tail after the last heredoc close. v0.2 has two kinds
+  # of heredoc closer (__HERM_FILE__ and __HERM_SKILL_FILE__) since skills
+  # got their own delimiter to avoid collisions with potential `__HERM_FILE__`
+  # inside skill markdown.
+  tail_line="$(awk '/^(__HERM_FILE__|__HERM_SKILL_FILE__)$/{found=NR} END{print found}' <<<"$rendered")"
+  [[ -n "$tail_line" ]]
+  invocation_block="$(tail -n +"$tail_line" <<<"$rendered")"
   grep -q '/opt/herm/scripts/01-mount-disk.sh$' <<<"$invocation_block"
   grep -q '/opt/herm/scripts/05-tailscale-join.sh$' <<<"$invocation_block"
+  grep -q '/opt/herm/scripts/07-seed-skills.sh$' <<<"$invocation_block"
+  grep -q '/opt/herm/scripts/08-tool-allowlist.sh$' <<<"$invocation_block"
+  grep -q '/opt/herm/scripts/09-install-reaper.sh$' <<<"$invocation_block"
   grep -q '/opt/herm/scripts/99-systemd-units.sh$' <<<"$invocation_block"
 }

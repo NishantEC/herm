@@ -1,0 +1,40 @@
+# herm — Hermes Agent tool allowlist policy.
+#
+# Applied to /home/herm/.hermes/config.yaml on first boot by
+# cloud-init/scripts/08-tool-allowlist.sh. Hermes Agent v0.13.0 ships with
+# 22+ toolsets; running with all of them enabled on a VM that holds your
+# GitHub/Anthropic OAuth tokens is more risk than the linux-permission
+# deny-all warrants by itself.
+#
+# A tool that is "enabled" here may still be gated per-skill via the skill's
+# frontmatter `tools:` allowlist (intersection wins).
+
+# Tools enabled by default. Add/remove for your fork's policy.
+allowed_tools:
+  - browser              # in-process browser_back/browser_click/etc. — safe in default sandbox
+  - clarify              # ask the user a clarifying question
+  - code_execution       # sandboxed Python via Hermes' built-in subprocess
+  - cronjob              # schedule heartbeats; required by watch-repo + summarize-day skills
+  - delegation           # spawn focused subagents — load-bearing for the A2 identity model
+  - github               # gh CLI passthrough — gated per-skill on actions
+  - mcp                  # native MCP — let the user wire their own MCP servers
+  - memory               # read/write own memory store
+  - read_file
+  - ripgrep              # read-only repo grep
+  - session_search
+  - task_planning
+  - web_fetch            # read URLs
+  - web_search           # read-only
+
+# Tools explicitly disabled. Listed here for documentation; even if a skill
+# tries to call them, the gateway rejects.
+denied_tools:
+  - browser_cdp          # full Chrome DevTools Protocol — too much surface
+  - computer_use         # mouse/keyboard control — extreme blast radius
+  - discord              # external messaging — not wired in v0.2
+  - email                # external messaging
+  - godmode              # red-teaming skill — explicit opt-in only
+  - minecraft_modpack_server
+  - slack                # external messaging
+  - tts                  # text-to-speech — pure cost, no functional use yet
+  - xurl                 # generic HTTP — bypasses the rest of the allowlist

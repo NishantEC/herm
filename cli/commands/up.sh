@@ -90,18 +90,26 @@ herm::cmd::up() {
 herm::__render_startup_script() {
   local script_dir="$HERM_REPO_ROOT/cloud-init/scripts"
   local unit_dir="$HERM_REPO_ROOT/systemd"
+  local skills_dir="$HERM_REPO_ROOT/skills"
+  local config_dir="$HERM_REPO_ROOT/config"
 
-  # dest:src:mode triples for every file the startup script should write.
+  # dest:src:mode triples for every fixed-path file the startup script writes.
   local files=(
     "/opt/herm/scripts/01-mount-disk.sh:$script_dir/01-mount-disk.sh:0755"
     "/opt/herm/scripts/02-create-user.sh:$script_dir/02-create-user.sh:0755"
     "/opt/herm/scripts/03-install-base.sh:$script_dir/03-install-base.sh:0755"
     "/opt/herm/scripts/04-install-hermes.sh:$script_dir/04-install-hermes.sh:0755"
     "/opt/herm/scripts/05-tailscale-join.sh:$script_dir/05-tailscale-join.sh:0755"
+    "/opt/herm/scripts/07-seed-skills.sh:$script_dir/07-seed-skills.sh:0755"
+    "/opt/herm/scripts/08-tool-allowlist.sh:$script_dir/08-tool-allowlist.sh:0755"
+    "/opt/herm/scripts/09-install-reaper.sh:$script_dir/09-install-reaper.sh:0755"
     "/opt/herm/scripts/99-systemd-units.sh:$script_dir/99-systemd-units.sh:0755"
     "/etc/systemd/system/hermes-agent.service:$unit_dir/hermes-agent.service:0644"
     "/etc/systemd/system/herm-backup.service:$unit_dir/herm-backup.service:0644"
     "/etc/systemd/system/herm-backup.timer:$unit_dir/herm-backup.timer:0644"
+    "/etc/systemd/system/herm-reaper.service:$unit_dir/herm-reaper.service:0644"
+    "/etc/systemd/system/herm-reaper.timer:$unit_dir/herm-reaper.timer:0644"
+    "/opt/herm/config/hermes-tools.yaml:$config_dir/hermes-tools.yaml:0644"
   )
 
   # Preamble: standard hardening, log file, dirs.
@@ -112,10 +120,10 @@ herm::__render_startup_script() {
 set -euo pipefail
 exec > >(tee -a /var/log/herm-startup.log) 2>&1
 echo "[herm] startup begin at $(date -Iseconds)"
-mkdir -p /opt/herm/scripts /etc/systemd/system
+mkdir -p /opt/herm/scripts /opt/herm/skills /opt/herm/config /etc/systemd/system
 __HERM_PREAMBLE__
 
-  # Inline each file.
+  # Inline each fixed-path file.
   local entry dest src mode
   for entry in "${files[@]}"; do
     IFS=':' read -r dest src mode <<<"$entry"
@@ -127,6 +135,33 @@ __HERM_PREAMBLE__
     printf "__HERM_FILE__\nchmod %s %s\n" "$mode" "$dest"
   done
 
+  # Walk the skills/ tree and inline each SKILL.md (and any supporting files
+  # next to it). Anthropic Agent-Skills spec: a skill is a directory containing
+  # SKILL.md plus optional siblings. We replicate the directory layout under
+  # /opt/herm/skills/, then 07-seed-skills.sh rsync's it into the herm user's
+  # ~/.hermes/skills/herm/.
+  if [[ -d $skills_dir ]]; then
+    local skill_file rel skill_dest
+    while IFS= read -r skill_file; do
+      rel="${skill_file#"$skills_dir"/}"
+      skill_dest="/opt/herm/skills/$rel"
+      printf "\nmkdir -p %q\n" "$(dirname "$skill_dest")"
+      printf "cat > %q <<'__HERM_SKILL_FILE__'\n" "$skill_dest"
+      cat "$skill_file"
+      printf "__HERM_SKILL_FILE__\nchmod 0644 %q\n" "$skill_dest"
+    done < <(find "$skills_dir" -type f \( -name 'SKILL.md' -o -name '*.md' -o -name '*.txt' -o -name '*.json' -o -name '*.yaml' -o -name '*.yml' \))
+  fi
+
+  # Read the reaper-enabled flag from config and export it so 09-install-reaper.sh
+  # can act on it. Default: disabled.
+  local reaper_enabled=0
+  if reaper_enabled_val=$(herm::read_config "$HERM_CONFIG_PATH" reaper enabled 2>/dev/null); then
+    if [[ "$reaper_enabled_val" == "true" ]]; then
+      reaper_enabled=1
+    fi
+  fi
+  printf "\nexport HERM_REAPER_ENABLED=%d\n" "$reaper_enabled"
+
   # Run the per-step scripts in order. 99-systemd-units.sh both writes the
   # unit-enable commands and finishes the bootstrap.
   cat <<'__HERM_RUN__'
@@ -136,6 +171,9 @@ __HERM_PREAMBLE__
 /opt/herm/scripts/03-install-base.sh
 /opt/herm/scripts/04-install-hermes.sh
 /opt/herm/scripts/05-tailscale-join.sh
+/opt/herm/scripts/07-seed-skills.sh
+/opt/herm/scripts/08-tool-allowlist.sh
+/opt/herm/scripts/09-install-reaper.sh
 /opt/herm/scripts/99-systemd-units.sh
 
 echo "[herm] startup complete at $(date -Iseconds)"
