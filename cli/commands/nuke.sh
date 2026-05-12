@@ -10,12 +10,11 @@ herm::cmd::nuke() {
     herm::die "no config at $HERM_CONFIG_PATH"
   fi
 
-  local project_id region zone hostname owner_tag
+  local project_id region zone hostname
   project_id="$(herm::read_config "$HERM_CONFIG_PATH" gcp project_id)"
   region="$(herm::read_config "$HERM_CONFIG_PATH" gcp region)"
   zone="$(herm::read_config "$HERM_CONFIG_PATH" gcp zone)"
   hostname="$(herm::read_config "$HERM_CONFIG_PATH" tailscale hostname)"
-  owner_tag="$(herm::read_config "$HERM_CONFIG_PATH" tailscale owner_tag)"
 
   herm::warn "This will DELETE the VM, the persistent disk, the backup bucket and its versions."
   if ! herm::confirm "Are you absolutely sure?"; then
@@ -41,7 +40,6 @@ herm::cmd::nuke() {
     -var "region=$region" \
     -var "zone=$zone" \
     -var "hostname=$hostname" \
-    -var "tailnet_owner_tag=$owner_tag" \
     -var "tailscale_auth_key=unused-during-destroy"
 
   # Disk has prevent_destroy=true; remove the lifecycle and re-destroy.

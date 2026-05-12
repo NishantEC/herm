@@ -39,23 +39,13 @@ variable "hostname" {
   default = "herm-vm"
 }
 
-variable "tailnet_owner_tag" {
-  type        = string
-  description = "Tailscale ACL tag (e.g. tag:nishant) authorized to reach the VM."
-
-  validation {
-    condition     = can(regex("^tag:[a-z0-9-]+$", var.tailnet_owner_tag))
-    error_message = "tailnet_owner_tag must look like tag:<lowercase-name>."
-  }
-}
-
 variable "tailscale_auth_key" {
   type        = string
   sensitive   = true
   description = "Single-use ephemeral Tailscale auth key. Stored in Secret Manager."
 }
 
-variable "budget_monthly_usd" {
-  type    = number
-  default = 25
-}
+# Tailscale ACL tag and monthly budget live in ~/.config/herm/config.toml and
+# are applied via the Tailscale admin console + `gcloud billing budgets`, not
+# via Terraform. Don't declare them as Terraform variables — tflint flags them
+# as unused.

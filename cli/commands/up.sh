@@ -9,12 +9,11 @@ herm::cmd::up() {
     herm::die "no config at $HERM_CONFIG_PATH — run 'herm init' first"
   fi
 
-  local project_id region zone hostname owner_tag
+  local project_id region zone hostname
   project_id="$(herm::read_config "$HERM_CONFIG_PATH" gcp project_id)"
   region="$(herm::read_config "$HERM_CONFIG_PATH" gcp region)"
   zone="$(herm::read_config "$HERM_CONFIG_PATH" gcp zone)"
   hostname="$(herm::read_config "$HERM_CONFIG_PATH" tailscale hostname)"
-  owner_tag="$(herm::read_config "$HERM_CONFIG_PATH" tailscale owner_tag)"
 
   # Tailscale auth key: ask the owner each time (cheaper than caching).
   local auth_key
@@ -45,7 +44,6 @@ herm::cmd::up() {
     -var "region=$region" \
     -var "zone=$zone" \
     -var "hostname=$hostname" \
-    -var "tailnet_owner_tag=$owner_tag" \
     -var "tailscale_auth_key=$auth_key"
 
   herm::log "VM provisioned. Cloud-init takes ~6–10 min on cold boot."

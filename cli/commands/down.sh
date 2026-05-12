@@ -9,12 +9,11 @@ herm::cmd::down() {
     herm::die "no config at $HERM_CONFIG_PATH"
   fi
 
-  local project_id region zone hostname owner_tag
+  local project_id region zone hostname
   project_id="$(herm::read_config "$HERM_CONFIG_PATH" gcp project_id)"
   region="$(herm::read_config "$HERM_CONFIG_PATH" gcp region)"
   zone="$(herm::read_config "$HERM_CONFIG_PATH" gcp zone)"
   hostname="$(herm::read_config "$HERM_CONFIG_PATH" tailscale hostname)"
-  owner_tag="$(herm::read_config "$HERM_CONFIG_PATH" tailscale owner_tag)"
 
   if ! herm::confirm "Destroy the herm VM in $project_id? (disk and backup will be kept)"; then
     herm::log "aborted"
@@ -35,7 +34,6 @@ herm::cmd::down() {
     -var "region=$region" \
     -var "zone=$zone" \
     -var "hostname=$hostname" \
-    -var "tailnet_owner_tag=$owner_tag" \
     -var "tailscale_auth_key=unused-during-destroy"
 
   herm::log "VM destroyed. Persistent disk and backup bucket remain. Run 'herm nuke' to remove them too."
