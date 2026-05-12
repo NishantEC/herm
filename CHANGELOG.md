@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-13
+
+Consolidates the original v0.2/v0.3/v0.4 roadmap into a single release. **Multica deferred to v0.3** after live research found the brainstorm's HTTP-bearer agent-registration assumption doesn't match Multica's actual architecture (task board over WebSocket + subprocess CLI dispatch). Hermes Agent v0.13.0 natively provides the four properties the brainstorm wanted from Multica (tickets via sessions, heartbeats via `cronjob` toolset, skills in Anthropic Agent-Skills format, A2 invisible-subagents via `delegation`), so v0.2 ships Hermes-native and Multica returns in v0.3 after source-reading. **Cloud NAT also deferred** — the ~$32/mo cost was rejected by the owner; egress-allowlist paranoid mode follows later.
+
+### Added
+
+- **Skills system.** 6 initial skills under `skills/` in Anthropic Agent-Skills format (`SKILL.md` Markdown + YAML frontmatter): `debug`, `review-pr`, `write-doc`, `update-deps`, `watch-repo`, `summarize-day`. The latter two are cron-scheduled heartbeats; the rest are on-demand. Seeded into `~/.hermes/skills/herm/` on boot by `cloud-init/scripts/07-seed-skills.sh`; user-authored skills outside that namespace are preserved across `herm up`/`herm down` cycles.
+- **Toolset disable policy.** `config/hermes-tools.yaml` declares which Hermes toolsets are turned off by default — `browser-cdp`, `computer_use`, external messaging (slack/discord/email/telegram/whatsapp/mattermost/matrix), `godmode`, `tts`, `voice`, `xurl`, niche toolsets. Applied to `agent.disabled_toolsets` in `~/.hermes/config.yaml` by `08-tool-allowlist.sh`.
+- **Auto-reaper.** `systemd/herm-reaper.{service,timer}` halts the VM after `idle_hours` (default 168 = 7 days) of no owner-peer activity on the tailnet. Opt-in via `[reaper] enabled=true` in `~/.config/herm/config.toml`. Installed by `09-install-reaper.sh`.
+- **9 new `herm` subcommands.** `login {claude|gh|gemini|codex|opencode|goose|all}`, `open {hermes|health|console|tailscale}`, `qr`, `rotate [hermes]`, `upgrade`, `backup [now|list]`, `restore <YYYY-MM-DD>`, `logs <unit>`, `console`. `herm help` regrouped into LIFECYCLE / DAY-TO-DAY / AUTH / MAINTENANCE.
+- **`docs/skills.md`** and **`docs/rotation.md`** — full docs for the two new owner-facing primitives.
+- **`docs/security.md`** updated with the toolset allowlist and reaper sections.
+- **3 new bats tests** verify the renderer inlines skills, tool policy, and the reaper-enable flag (13/13 total pass).
+
+### Fixed (during live integration on `flashckard`)
+
+- **`tools.allowed/denied` key was theatrical.** The first draft of `config/hermes-tools.yaml` declared `allowed_tools:` and `denied_tools:` lists that Hermes ignores — Hermes' real disable mechanism is `agent.disabled_toolsets` (a flat list of toolset names). Both the policy file and the apply script switched to the real key. Caught when grep'ing the live VM's config and finding the stub `tools:` key Hermes parsed but never used.
+
+### Deferred to v0.3
+
+- **Multica orchestration.** Returns after reading `multica-ai/multica` source to find the actual runtime registration shape (the public docs at `/docs/agents/http` and `/docs/runtimes` both 404).
+- **Cloud NAT + egress allowlist.** ~$32/mo gateway cost rejected.
+- **Per-agent Podman sandboxing.** Significant implementation work; deferred until there's a second agent on the VM that needs isolation from Hermes.
+- **CMEK.** Optional `herm up --cmek` flag stubbed in spec but not implemented — limited blast radius reduction relative to the implementation cost.
+- **`herm upgrade` disk-snapshot auto-rollback.** The snapshot step works; the auto-rollback on health-check failure is the deferred half.
+- **Native desktop / mobile client.** Hermes Desktop / AionUI wiring is still manual on the laptop side.
+
+[Unreleased]: https://github.com/NishantEC/herm/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/NishantEC/herm/releases/tag/v0.2.0
+
 ## [0.1.0] - 2026-05-13
 
 First end-to-end working release: provisions a private GCP VM running Hermes Agent v0.13.0, joins it to your tailnet, persists state across rebuilds, and serves the gateway API on port 8642. Validated end-to-end against `flashckard` with `claude-sonnet-4-6` via Anthropic OAuth.
@@ -50,5 +80,4 @@ These all surfaced during ten hours of live integration against a real GCP proje
 - **`herm nuke` friction**: the PD-SSD has `prevent_destroy=true`, so `herm nuke` instructs you to comment out the lifecycle block in `terraform/disk.tf` and rerun. A `--force` flag that toggles the lifecycle automatically is v0.2.
 - **Auth handling on the VM is intentionally manual**: the `herm` user has no sudo (by design); paste the Tailscale auth key into `herm up` interactively each time.
 
-[Unreleased]: https://github.com/NishantEC/herm/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/NishantEC/herm/releases/tag/v0.1.0

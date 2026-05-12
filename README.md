@@ -2,7 +2,7 @@
 
 > Headless AI agent workstation on Google Cloud, tunneled to your devices via Tailscale.
 
-**⚠️ v0.1.0 — early but working.** Provisions a small GCP VM running [Hermes Agent](https://github.com/nousresearch/hermes-agent) v0.13.0, joins it to your tailnet, and serves the OpenAI-compatible gateway at `:8642` with bearer auth. Multica orchestration, the full skills system, and paranoid-mode hardening land in v0.2–v0.4.
+**⚠️ v0.2.0 — early but working.** Provisions a small GCP VM running [Hermes Agent](https://github.com/nousresearch/hermes-agent) v0.13.0, joins it to your tailnet, serves the OpenAI-compatible gateway at `:8642`, seeds 6 custom skills (`debug`, `review-pr`, `write-doc`, `update-deps`, `watch-repo`, `summarize-day`), and applies a hardening policy that disables 15 Hermes toolsets (full Chrome DevTools, computer-use, external messaging, etc.) by default.
 
 ---
 
@@ -66,21 +66,48 @@ curl -sS -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   http://herm-vm:8642/v1/chat/completions
 ```
 
-## Subcommands (v0.1)
+## Subcommands
 
 | Command | Effect |
 |---|---|
+| **Lifecycle** | |
 | `herm init` | Configure `~/.config/herm/config.toml`, enable GCP APIs, create the Terraform state bucket. One-time. |
-| `herm up` | `terraform apply` — provisions the VM, joins the tailnet. |
-| `herm up --replace-vm` | Force-recreates only the VM (keeps disk, secret). Use when iterating on cloud-init/startup-script. |
+| `herm up [--replace-vm]` | `terraform apply`. `--replace-vm` force-recreates the VM (keeps disk + secret). |
 | `herm down` | `terraform destroy` of the VM + ephemeral resources. **Persistent disk and backup bucket survive.** |
 | `herm nuke` | Destroys everything including persistent disk and GCS backup (double-confirms). |
 | `herm status` | Uptime, tailnet name, last backup time. |
+| **Day-to-day** | |
 | `herm ssh` | `tailscale ssh herm@herm-vm`. |
+| `herm logs <unit>` | Tail journald for a systemd unit on the VM. |
+| `herm open <target>` | Open hermes / health / console / tailscale URLs in default browser. |
+| `herm qr` | Print a terminal QR code with the gateway URL + bearer token (for phone clients). |
+| **Auth** | |
+| `herm login <provider>` | OAuth/device-code flow on the VM. Providers: `claude`, `gh`, `gemini`, `codex`, `opencode`, `goose`, `all`. |
+| **Maintenance** | |
+| `herm rotate [hermes]` | Rotate the Hermes API server token. See [`docs/rotation.md`](docs/rotation.md). |
+| `herm upgrade` | Snapshot disk, pull latest versions, restart, auto-rollback on failure. |
+| `herm backup [now\|list]` | Trigger an immediate GCS rsync, or list dated backup folders. |
+| `herm restore <YYYY-MM-DD>` | Restore `/home/herm` from a dated backup snapshot. |
+| `herm console` | Open the GCP console page for the VM. |
 
-## Architecture (v0.1 surface)
+## Skills
 
-See [`docs/superpowers/specs/2026-05-13-herm-design.md`](docs/superpowers/specs/2026-05-13-herm-design.md) for the full design.
+`herm` seeds 6 skills into Hermes at boot. They live as YAML-frontmatter Markdown under `~/.hermes/skills/herm/` and Hermes matches incoming prompts against their `description:` line.
+
+| Skill | Fires on | Schedule |
+|---|---|---|
+| `debug` | Errors, stack traces, "something is broken" | on-demand |
+| `review-pr` | PR URLs, "review PR X" | on-demand |
+| `write-doc` | "write a doc," "explain Y in README" | on-demand |
+| `update-deps` | "bump deps," "upgrade X" | on-demand |
+| `watch-repo` | (no trigger — heartbeat) | every 30 min |
+| `summarize-day` | (no trigger — heartbeat) | 09:00 UTC daily |
+
+See [`docs/skills.md`](docs/skills.md) for the format, how to add your own, and the tool-allowlist intersection rules.
+
+## Architecture
+
+See [`docs/superpowers/specs/2026-05-13-herm-design.md`](docs/superpowers/specs/2026-05-13-herm-design.md) for the v0.1 foundation, and [`docs/superpowers/specs/2026-05-13-herm-v0.2-design.md`](docs/superpowers/specs/2026-05-13-herm-v0.2-design.md) for the v0.2 additions and the Multica pivot rationale.
 
 ## Contributing
 

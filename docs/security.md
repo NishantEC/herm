@@ -29,6 +29,39 @@ This document lists every defensive control v0.1 ships with. Pair it with `docs/
 - GCS backup bucket: uniform bucket-level access, object versioning enabled, `storage.objectAdmin` only for the VM service account.
 - `/home/herm` is owned by the `herm` user with mode `0700`.
 
+## Toolset allowlist (v0.2)
+
+Hermes Agent v0.13.0 ships with 22+ toolsets. v0.2 disables the ones we don't need in the default deployment by writing to `agent.disabled_toolsets` in `/home/herm/.hermes/config.yaml`. The policy lives in `config/hermes-tools.yaml` in the repo and is applied by `cloud-init/scripts/08-tool-allowlist.sh` on first boot.
+
+Disabled by default:
+- `browser-cdp` — full Chrome DevTools Protocol; way more surface than the in-process `browser` toolset.
+- `computer_use` — mouse/keyboard control on the host. Extreme blast radius on a VM that holds your `gh` token.
+- `discord`, `slack`, `email`, `telegram`, `whatsapp`, `mattermost`, `matrix` — external messaging connectors. Not wired in v0.2; enabling them connects your agent to chat platforms whose creds need their own threat model.
+- `godmode` — Hermes' built-in red-teaming skill. Explicit opt-in only.
+- `tts`, `voice` — cost without functional value in v0.2.
+- `xurl` — generic HTTP fetch. Bypasses the per-tool allowlists below it.
+- `minecraft-modpack-server`, `pokemon-player` — niche.
+
+To re-enable any of these, remove the entry from `config/hermes-tools.yaml` and run `herm upgrade`. Or edit `~/.hermes/config.yaml` directly on the VM and `pkill -9 -f 'hermes gateway'`.
+
+## Auto-reaper (v0.2, opt-in)
+
+`systemd/herm-reaper.{service,timer}` halts the VM after 7 days (default) of no tailnet activity from owner-tagged peers. Disabled by default; enable per `~/.config/herm/config.toml`:
+
+```toml
+[reaper]
+enabled = true
+idle_hours = 168
+```
+
+Then `herm upgrade` to apply.
+
+When the reaper fires the VM is halted (not deleted) — the persistent disk and Secret Manager entries survive. `gcloud compute instances start herm-vm` brings it back.
+
+## Token rotation (v0.2)
+
+`herm rotate` regenerates the Hermes API server bearer token; see [`docs/rotation.md`](rotation.md). Recommended quarterly or after any time the token has been pasted into a chat/log.
+
 ## Runtime hardening
 
 The Hermes Agent systemd unit ships with:
