@@ -6,7 +6,6 @@
 set -euo pipefail
 
 HERMES_USER="herm"
-HERMES_HOME="/home/herm/.hermes"
 HERMES_INSTALLER_URL="https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh"
 
 # Run installer as the unprivileged herm user. < /dev/null guarantees any
