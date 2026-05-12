@@ -1,0 +1,33 @@
+// herm — Tailscale ACL template.
+// Paste into https://login.tailscale.com/admin/acls and REPLACE the placeholders.
+// This template restricts the herm-vm to only your tagged devices on the documented ports.
+
+{
+  "tagOwners": {
+    // REPLACE: your Tailscale username (without the leading @).
+    "tag:herm-vm": ["autogroup:admin"],
+    "tag:<YOUR_TAILSCALE_USERNAME>": ["autogroup:admin"],
+  },
+
+  "acls": [
+    {
+      "action": "accept",
+      // REPLACE: same username tag as above.
+      "src": ["tag:<YOUR_TAILSCALE_USERNAME>"],
+      "dst": [
+        "tag:herm-vm:22",     // SSH (tailscale ssh)
+        "tag:herm-vm:8642",   // Hermes Agent API
+      ],
+    },
+  ],
+
+  "ssh": [
+    {
+      "action": "accept",
+      // REPLACE: same username tag as above.
+      "src": ["tag:<YOUR_TAILSCALE_USERNAME>"],
+      "dst": ["tag:herm-vm"],
+      "users": ["herm"],
+    },
+  ],
+}
