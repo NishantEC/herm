@@ -9,6 +9,13 @@ TAILSCALE_LIST_URL="https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Force apt to use IPv4. The default GCE VPC has no IPv6 egress, but
+# deb.debian.org resolves to AAAA records first — without this, package
+# fetches hang on "Network is unreachable" before falling back. Killed
+# the first v0.1 bootstrap; trivial to fix in a v0.4 paranoid-mode NAT
+# allowlist by also pinning the resolver.
+echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99-herm-force-ipv4
+
 apt-get update
 apt-get install -y --no-install-recommends \
   ca-certificates curl gnupg lsb-release \
