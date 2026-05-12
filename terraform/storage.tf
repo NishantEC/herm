@@ -20,7 +20,7 @@ resource "google_storage_bucket" "backup" {
     }
   }
 
-  logging {
-    log_bucket = google_storage_bucket.backup.name # self-log for v0.1; v0.4 uses a separate log bucket.
-  }
+  # No bucket-level logging block in v0.1: GCS forbids a bucket logging to
+  # itself, and provisioning a separate log bucket is a v0.4 task. Project-
+  # level Cloud Audit Logs already capture data-access events.
 }

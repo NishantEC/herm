@@ -62,7 +62,7 @@ The Hermes Agent systemd unit ships with:
 ## Auditability
 
 - VM stdout/journald → Cloud Logging (default project sink), 30-day retention.
-- GCS Data Access audit logs enabled on the backup bucket via `terraform/storage.tf`.
+- GCS Data Access events captured by project-level Cloud Audit Logs (default in GCP). A bucket-level access-log sink to a separate log bucket is a v0.4 task — see `docs/superpowers/specs/2026-05-13-herm-design.md`.
 
 ## Blast radius
 
