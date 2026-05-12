@@ -25,8 +25,10 @@ set -euo pipefail
 HERMES_HOME="/home/herm/.hermes"
 mkdir -p "$HERMES_HOME"
 
-# Generate API token if not already present:
-if [[ ! -f "$HERMES_HOME/.api-token" ]]; then
+# Generate API token if missing OR empty. (A bare `-f` check let stale
+# zero-byte files from prior bootstrap attempts on the same persistent
+# disk survive, leaving the gateway running with no usable bearer key.)
+if [[ ! -s "$HERMES_HOME/.api-token" ]]; then
   head -c 32 /dev/urandom | base64 | tr -d '\n' > "$HERMES_HOME/.api-token"
   chmod 0600 "$HERMES_HOME/.api-token"
 fi
