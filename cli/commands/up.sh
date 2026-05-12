@@ -34,12 +34,12 @@ herm::cmd::up() {
   fi
 
   # Render cloud-init.yaml by inlining base64-encoded scripts and units.
+  # Terraform consumes this via TF_VAR_cloud_init_user_data (see terraform/vm.tf);
+  # reading cloud-init/cloud-init.yaml directly would leave BASE64_* placeholders
+  # literal and silently break cloud-init on first boot.
   local rendered
   rendered="$(herm::__render_cloud_init)"
-  local tmp
-  tmp="$(mktemp)"
-  trap 'rm -f "$tmp"' EXIT
-  printf '%s' "$rendered" > "$tmp"
+  export TF_VAR_cloud_init_user_data="$rendered"
 
   # Drop into terraform/. Use a per-project state bucket.
   local state_bucket="${project_id}-herm-tfstate"
@@ -55,6 +55,8 @@ herm::cmd::up() {
     -var "zone=$zone" \
     -var "hostname=$hostname" \
     -var "tailscale_auth_key=$auth_key"
+
+  unset TF_VAR_cloud_init_user_data
 
   herm::log "VM provisioned. Cloud-init takes ~6–10 min on cold boot."
   herm::log "Watch progress with: gcloud compute instances get-serial-port-output $hostname --zone $zone --project $project_id"

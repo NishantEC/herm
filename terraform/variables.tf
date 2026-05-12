@@ -45,6 +45,11 @@ variable "tailscale_auth_key" {
   description = "Single-use ephemeral Tailscale auth key. Stored in Secret Manager."
 }
 
+variable "cloud_init_user_data" {
+  type        = string
+  description = "Rendered cloud-init YAML for the VM. Populated by cli/commands/up.sh via TF_VAR_cloud_init_user_data (it inlines base64-encoded scripts + systemd units from cloud-init/scripts/ and systemd/)."
+}
+
 # Tailscale ACL tag and monthly budget live in ~/.config/herm/config.toml and
 # are applied via the Tailscale admin console + `gcloud billing budgets`, not
 # via Terraform. Don't declare them as Terraform variables — tflint flags them

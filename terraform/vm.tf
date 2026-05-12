@@ -3,9 +3,10 @@ data "google_compute_image" "debian" {
   project = "debian-cloud"
 }
 
-locals {
-  cloud_init_user_data = file("${path.module}/../cloud-init/cloud-init.yaml")
-}
+# cloud_init_user_data is rendered by cli/commands/up.sh (which inlines the
+# base64-encoded scripts and systemd units) and passed in via TF_VAR. Reading
+# the cloud-init/cloud-init.yaml template here directly would leave the
+# BASE64_* placeholders literal and silently break cloud-init on first boot.
 
 resource "google_compute_instance" "herm" {
   name         = var.hostname
@@ -46,7 +47,7 @@ resource "google_compute_instance" "herm" {
 
   metadata = {
     enable-oslogin     = "TRUE"
-    user-data          = local.cloud_init_user_data
+    user-data          = var.cloud_init_user_data
     herm-project-id    = var.project_id
     herm-ts-secret-id  = google_secret_manager_secret.tailscale_auth_key.secret_id
     herm-backup-bucket = google_storage_bucket.backup.name
