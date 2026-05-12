@@ -19,6 +19,13 @@ if [[ ! -x /home/herm/.local/bin/hermes ]]; then
   exit 1
 fi
 
+# The Hermes Agent base install ships without the anthropic Python SDK; the
+# Anthropic provider needs it. Without this step, /v1/chat/completions calls
+# 500 with "The 'anthropic' package is required for the Anthropic provider."
+sudo -u "$HERMES_USER" -H /home/herm/.local/bin/uv pip install \
+  --python /home/herm/.hermes/hermes-agent/venv/bin/python \
+  'anthropic>=0.39.0'
+
 # Per-user .env that the API server reads.
 sudo -u "$HERMES_USER" -H bash <<'EOSU'
 set -euo pipefail
