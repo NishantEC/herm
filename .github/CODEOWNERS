@@ -1,0 +1,9 @@
+# Default ownership: the maintainer reviews everything.
+*                                       @<your-github-username>
+
+# Terraform / cloud-init / systemd — anything that could change the cost or
+# security posture — must always be reviewed by the maintainer.
+/terraform/                             @<your-github-username>
+/cloud-init/                            @<your-github-username>
+/systemd/                               @<your-github-username>
+/.github/                               @<your-github-username>

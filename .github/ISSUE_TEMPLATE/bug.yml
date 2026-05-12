@@ -1,0 +1,34 @@
+name: Bug report
+description: Something is broken in herm
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Do not include real GCP project IDs, IPs, or secrets** in this issue.
+        For security issues, please use a private advisory instead — see SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: herm version
+      placeholder: "git rev-parse HEAD output"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to happen
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
