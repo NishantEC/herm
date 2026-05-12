@@ -1,0 +1,34 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# Personal config — never commit
+.env
+.env.local
+~/.config/herm/
+
+# Build/test artifacts
+node_modules/
+coverage/
+.bats-tmp/
+
+# Secrets safety net
+*.pem
+*.key
+**/secrets/
