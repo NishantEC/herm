@@ -19,7 +19,9 @@ mkdir -p "$DEST"
 chown -R herm:herm /home/herm/.hermes/skills
 
 # rsync with --delete only inside herm/, so user-authored skills under
-# /home/herm/.hermes/skills/<other-name>/ are preserved.
-sudo -u herm rsync -a --delete "$SRC/" "$DEST/"
+# /home/herm/.hermes/skills/<other-name>/ are preserved. --exclude='._*'
+# drops macOS AppleDouble files in case someone tar'd the payload on a
+# Mac without COPYFILE_DISABLE=1.
+sudo -u herm rsync -a --delete --exclude='._*' --exclude='.DS_Store' "$SRC/" "$DEST/"
 
 echo "[07-seed-skills] seeded $(find "$DEST" -name SKILL.md | wc -l | tr -d ' ') skills into $DEST"
