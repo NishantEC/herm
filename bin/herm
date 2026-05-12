@@ -22,16 +22,33 @@ herm — AI agent workstation on GCP
 USAGE:
   herm <command> [args...]
 
-COMMANDS:
+LIFECYCLE
   init               One-time: configure ~/.config/herm/config.toml, enable APIs, create state bucket
   up                 terraform apply: provision VM, join tailnet
-  down               terraform destroy of VM + ephemeral resources (disk and backup bucket survive)
+  down               terraform destroy of VM + ephemeral resources (disk + backup survive)
   nuke               Destroy everything including persistent disk and backup bucket
-  status             Show VM status, tailnet name, last backup time
+  status             Show VM status, tailnet reachability, last backup time
+
+DAY-TO-DAY
   ssh                tailscale ssh herm@<hostname>
+  logs <unit>        Tail journald for a systemd unit on the VM (hermes-agent, herm-backup, ...)
+  open <target>      Open one of the VM's surfaces in the default browser
+  qr                 Print a terminal QR code with the gateway URL + bearer token
+
+AUTH
+  login <provider>   Run an interactive OAuth/device-code flow on the VM
+                     providers: claude | gh | gemini | codex | opencode | goose | all
+
+MAINTENANCE
+  rotate [target]    Rotate the Hermes API server token (target: hermes — default)
+  upgrade            Snapshot disk, pull latest versions, restart, verify, auto-rollback on failure
+  backup [now|list]  Trigger an immediate GCS rsync, or list dated backup folders
+  restore <YYYY-MM-DD>  Restore /home/herm from a dated backup snapshot
+  console            Open the GCP console page for this VM in the default browser
+
   help               Show this message
 
-See docs/ for the threat model, security controls, cost breakdown, and troubleshooting.
+See docs/ for the threat model, security controls, cost breakdown, skills, rotation, and troubleshooting.
 EOF
 }
 
@@ -42,7 +59,7 @@ case "$cmd" in
   help|-h|--help)
     usage
     ;;
-  init|up|down|nuke|status|ssh)
+  init|up|down|nuke|status|ssh|login|open|qr|rotate|upgrade|backup|restore|logs|console)
     cmd_file="$HERM_REPO_ROOT/cli/commands/${cmd}.sh"
     if [[ ! -f $cmd_file ]]; then
       herm::die "subcommand file missing: $cmd_file"
