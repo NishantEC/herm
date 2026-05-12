@@ -1,0 +1,16 @@
+[gcp]
+project_id     = "fixture-project"
+billing_account = "fixture-billing"
+region         = "us-central1"
+zone           = "us-central1-a"
+
+[vm]
+machine_type = "e2-small"
+disk_size_gb = 10
+
+[tailscale]
+owner_tag = "tag:fixture"
+hostname = "herm-vm"
+
+[budget]
+monthly_usd = 25
