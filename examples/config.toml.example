@@ -1,0 +1,26 @@
+# herm — owner configuration
+# Copied by `herm init` to ~/.config/herm/config.toml
+# DO NOT COMMIT THIS FILE WITH REAL VALUES.
+
+[gcp]
+project_id     = "<YOUR_GCP_PROJECT_ID>"
+billing_account = "<YOUR_BILLING_ACCOUNT_ID>"
+region         = "us-central1"
+zone           = "us-central1-a"
+
+[vm]
+# Locked at e2-small for cost predictability. Override only if you know why.
+machine_type = "e2-small"
+# Persistent disk size in GB.
+disk_size_gb = 10
+
+[tailscale]
+# Owner tag applied to the VM in the tailnet ACL.
+# Replace with your own tag from https://login.tailscale.com/admin/acls
+owner_tag = "tag:<YOUR_TAILSCALE_USERNAME>"
+# Hostname the VM joins as.
+hostname = "herm-vm"
+
+[budget]
+# Monthly budget alert in USD.
+monthly_usd = 25
