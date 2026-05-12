@@ -1,0 +1,50 @@
+#cloud-config
+# herm v0.1 cloud-init entrypoint
+# Mounts the persistent disk, creates the herm user, installs base packages,
+# installs Hermes Agent, joins Tailscale, drops hardened systemd units.
+
+write_files:
+  - path: /opt/herm/scripts/01-mount-disk.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_01
+  - path: /opt/herm/scripts/02-create-user.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_02
+  - path: /opt/herm/scripts/03-install-base.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_03
+  - path: /opt/herm/scripts/04-install-hermes.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_04
+  - path: /opt/herm/scripts/05-tailscale-join.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_05
+  - path: /opt/herm/scripts/99-systemd-units.sh
+    permissions: "0755"
+    encoding: b64
+    content: BASE64_99
+  - path: /etc/systemd/system/hermes-agent.service
+    permissions: "0644"
+    encoding: b64
+    content: BASE64_UNIT_HERMES
+  - path: /etc/systemd/system/herm-backup.service
+    permissions: "0644"
+    encoding: b64
+    content: BASE64_UNIT_BACKUP_SVC
+  - path: /etc/systemd/system/herm-backup.timer
+    permissions: "0644"
+    encoding: b64
+    content: BASE64_UNIT_BACKUP_TIMER
+
+runcmd:
+  - [ /opt/herm/scripts/01-mount-disk.sh ]
+  - [ /opt/herm/scripts/02-create-user.sh ]
+  - [ /opt/herm/scripts/03-install-base.sh ]
+  - [ /opt/herm/scripts/04-install-hermes.sh ]
+  - [ /opt/herm/scripts/05-tailscale-join.sh ]
+  - [ /opt/herm/scripts/99-systemd-units.sh ]
