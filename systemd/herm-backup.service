@@ -1,0 +1,11 @@
+[Unit]
+Description=herm — nightly rsync of /home/herm to GCS
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/bash -c 'gsutil -m rsync -r -d /home/herm gs://$(curl -fsSL -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/herm-backup-bucket)/$(date -u +%%Y-%%m-%%d)'
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
