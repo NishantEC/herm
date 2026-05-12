@@ -1,36 +1,46 @@
 #!/usr/bin/env bash
-# Install Hermes Agent as the herm user. Pinned version.
-# Generates an API token on first boot and stashes it under /home/herm/.hermes/.
+# Install Hermes Agent as the herm user via the official one-line installer.
+# Generates an API server bearer token on first boot and writes a non-interactive
+# ~/.hermes/.env so the API server starts up without prompting.
 
 set -euo pipefail
 
-HERMES_VERSION="1.4.0" # pinned; bumped via dependabot/manual review.
-HERMES_HOME="/home/herm/.hermes"
 HERMES_USER="herm"
+HERMES_HOME="/home/herm/.hermes"
+HERMES_INSTALLER_URL="https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh"
 
-sudo -u "$HERMES_USER" -H bash <<EOSU
+# Run installer as the unprivileged herm user. < /dev/null guarantees any
+# interactive prompts get EOF immediately (the installer is designed to be
+# non-interactive but the safety belt is cheap).
+sudo -u "$HERMES_USER" -H bash -c "curl -fsSL '$HERMES_INSTALLER_URL' | bash" < /dev/null
+
+# Verify the installer landed the binary where the docs say it should.
+if [[ ! -x /home/herm/.local/bin/hermes ]]; then
+  echo "[04-install-hermes] expected /home/herm/.local/bin/hermes after install; aborting" >&2
+  exit 1
+fi
+
+# Per-user .env that the API server reads.
+sudo -u "$HERMES_USER" -H bash <<'EOSU'
 set -euo pipefail
+HERMES_HOME="/home/herm/.hermes"
 mkdir -p "$HERMES_HOME"
-
-# Install Hermes Agent CLI globally for the herm user (uses npm --prefix to keep it user-scoped).
-mkdir -p /home/herm/.npm-global
-npm config set prefix /home/herm/.npm-global
-export PATH="/home/herm/.npm-global/bin:\$PATH"
-npm install -g "hermes-agent@$HERMES_VERSION"
 
 # Generate API token if not already present:
 if [[ ! -f "$HERMES_HOME/.api-token" ]]; then
   head -c 32 /dev/urandom | base64 | tr -d '\n' > "$HERMES_HOME/.api-token"
   chmod 0600 "$HERMES_HOME/.api-token"
 fi
+API_TOKEN=$(cat "$HERMES_HOME/.api-token")
 
-# Minimal .env so the API server binds to 0.0.0.0 inside the tailnet:
 cat > "$HERMES_HOME/.env" <<EOENV
+API_SERVER_ENABLED=true
 API_SERVER_HOST=0.0.0.0
 API_SERVER_PORT=8642
-HERMES_API_TOKEN_FILE=$HERMES_HOME/.api-token
+API_SERVER_KEY=$API_TOKEN
 EOENV
 chmod 0600 "$HERMES_HOME/.env"
 EOSU
 
-echo "[04-install-hermes] hermes-agent@$HERMES_VERSION installed for $HERMES_USER"
+HERMES_VERSION=$(/home/herm/.local/bin/hermes --version 2>&1 | head -1 || echo "unknown")
+echo "[04-install-hermes] hermes installed: $HERMES_VERSION"
