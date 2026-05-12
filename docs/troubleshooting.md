@@ -1,5 +1,15 @@
 # Troubleshooting
 
+## `herm up` fails with `credentials: could not find default credentials`
+
+Terraform's Google provider and GCS backend use Application Default Credentials (ADC), which are separate from `gcloud auth login`. Run this once:
+
+```bash
+gcloud auth application-default login
+```
+
+It opens a browser, you grant scopes, it writes `~/.config/gcloud/application_default_credentials.json`. Then re-run `herm up`. `herm init` does this for you on fresh setups; this error only appears if the ADC file is missing or was deleted.
+
 ## `herm up` hangs after "Provisioning VM..."
 
 Cloud-init can take 6–10 minutes on a cold boot. Check progress:

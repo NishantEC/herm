@@ -47,6 +47,14 @@ EOF
   chmod 0600 "$HERM_CONFIG_PATH"
   herm::log "config written to $HERM_CONFIG_PATH"
 
+  # Application Default Credentials — Terraform's google provider + gcs backend
+  # need these, separate from `gcloud auth login`. Idempotent on subsequent runs.
+  local adc_file="$HOME/.config/gcloud/application_default_credentials.json"
+  if [[ ! -f $adc_file ]]; then
+    herm::log "Application Default Credentials missing — running 'gcloud auth application-default login' (browser will open)..."
+    gcloud auth application-default login
+  fi
+
   # Enable required APIs.
   herm::log "enabling required GCP APIs..."
   gcloud --project "$project_id" services enable \

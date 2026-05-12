@@ -9,6 +9,16 @@ herm::cmd::up() {
     herm::die "no config at $HERM_CONFIG_PATH — run 'herm init' first"
   fi
 
+  # Terraform's google provider and gcs backend both need Application Default
+  # Credentials, which are separate from 'gcloud auth login'. If missing, fail
+  # fast with a clear instruction instead of letting terraform error opaquely.
+  if [[ ! -f $HOME/.config/gcloud/application_default_credentials.json ]]; then
+    herm::err "Application Default Credentials not configured."
+    herm::err "Run this once, then re-run 'herm up':"
+    herm::err "  gcloud auth application-default login"
+    return 1
+  fi
+
   local project_id region zone hostname
   project_id="$(herm::read_config "$HERM_CONFIG_PATH" gcp project_id)"
   region="$(herm::read_config "$HERM_CONFIG_PATH" gcp region)"
