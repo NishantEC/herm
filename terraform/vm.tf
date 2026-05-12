@@ -33,7 +33,16 @@ resource "google_compute_instance" "herm" {
 
   network_interface {
     subnetwork = google_compute_subnetwork.herm.self_link
-    # No access_config block ⇒ no external IP. This is load-bearing.
+
+    # Ephemeral external IPv4 for v0.1. The VM needs public internet egress to
+    # fetch apt/npm/Tailscale packages on first boot, and we don't ship a Cloud
+    # NAT in v0.1 (~$32/mo). The deny-all-ingress firewall (network.tf) blocks
+    # all inbound from 0.0.0.0/0, so the public IP carries zero attack surface
+    # — connections can be initiated *outbound* only. v0.4 paranoid mode swaps
+    # this for Cloud NAT + egress allowlist and removes the external IP.
+    access_config {
+      network_tier = "STANDARD"
+    }
   }
 
   shielded_instance_config {

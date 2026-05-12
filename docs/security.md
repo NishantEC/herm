@@ -4,7 +4,7 @@ This document lists every defensive control v0.1 ships with. Pair it with `docs/
 
 ## Network
 
-- VM has no external IP (`access_config` block omitted in `terraform/vm.tf`).
+- VM has an **ephemeral external IPv4** for outbound egress (apt, npm, Tailscale package fetches). This is a v0.1 relaxation of the original "no external IP" stance: the deny-all-ingress firewall below makes the public IP carry zero attack surface (connections can be initiated outbound only), and a v0.1 Cloud NAT would add ~$32/mo. v0.4 paranoid mode reverts to no external IP + Cloud NAT + egress allowlist. See `terraform/vm.tf` for rationale.
 - VPC firewall: default-deny ingress. No `allow` rules on tcp.
 - Egress: unrestricted in v0.1 (Cloud NAT egress allowlist is a v0.4 feature).
 - Reachability: only via Tailscale. Tailscale ACL template at `examples/tailscale-acl.hujson.example` limits node access to the owner's tagged devices.
