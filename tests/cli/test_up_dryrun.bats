@@ -7,28 +7,43 @@ setup() {
   source "$HERM_REPO_ROOT/cli/commands/up.sh"
 }
 
-@test "render_cloud_init inlines all base64 placeholders" {
-  rendered="$(herm::__render_cloud_init)"
-  ! grep -q 'BASE64_01' <<<"$rendered"
-  ! grep -q 'BASE64_02' <<<"$rendered"
-  ! grep -q 'BASE64_03' <<<"$rendered"
-  ! grep -q 'BASE64_04' <<<"$rendered"
-  ! grep -q 'BASE64_05' <<<"$rendered"
-  ! grep -q 'BASE64_99' <<<"$rendered"
-  ! grep -q 'BASE64_UNIT_HERMES' <<<"$rendered"
-  ! grep -q 'BASE64_UNIT_BACKUP_SVC' <<<"$rendered"
-  ! grep -q 'BASE64_UNIT_BACKUP_TIMER' <<<"$rendered"
+@test "render_startup_script begins with #!/bin/bash" {
+  rendered="$(herm::__render_startup_script)"
+  [[ "${rendered:0:11}" == "#!/bin/bash" ]]
 }
 
-@test "render_cloud_init produces valid YAML preamble" {
-  rendered="$(herm::__render_cloud_init)"
-  [[ "${rendered:0:13}" == "#cloud-config" ]]
+@test "render_startup_script inlines every per-step script" {
+  rendered="$(herm::__render_startup_script)"
+  grep -q '/opt/herm/scripts/01-mount-disk.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/02-create-user.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/03-install-base.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/04-install-hermes.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/05-tailscale-join.sh <<' <<<"$rendered"
+  grep -q '/opt/herm/scripts/99-systemd-units.sh <<' <<<"$rendered"
 }
 
-@test "render_cloud_init encoded blocks decode back to the source files" {
-  rendered="$(herm::__render_cloud_init)"
-  # Pull out the 01-mount-disk encoded value and decode it.
-  encoded="$(grep -A3 '01-mount-disk' <<<"$rendered" | grep -o 'content: .*' | tr -d '\n' | sed 's/^content: //')"
-  decoded="$(printf '%s' "$encoded" | base64 -d 2>/dev/null)"
-  [[ "$decoded" == *"format \$DEVICE as ext4"* || "$decoded" == *"formatting"* ]]
+@test "render_startup_script inlines every systemd unit" {
+  rendered="$(herm::__render_startup_script)"
+  grep -q '/etc/systemd/system/hermes-agent.service <<' <<<"$rendered"
+  grep -q '/etc/systemd/system/herm-backup.service <<' <<<"$rendered"
+  grep -q '/etc/systemd/system/herm-backup.timer <<' <<<"$rendered"
+}
+
+@test "render_startup_script preserves literal \$VAR refs in inlined script bodies" {
+  # Each per-step script uses bash vars like $DEVICE, $HOSTNAME. The outer
+  # heredoc is single-quoted so they must survive verbatim.
+  rendered="$(herm::__render_startup_script)"
+  grep -Fq 'DEVICE="/dev/disk/by-id/google-herm-data"' <<<"$rendered"
+  grep -Fq 'HOSTNAME=$(hostname)' <<<"$rendered"
+}
+
+@test "render_startup_script ends by invoking all step scripts in order" {
+  rendered="$(herm::__render_startup_script)"
+  # Capture only the tail after the last heredoc close.
+  tail="$(awk '/^__HERM_FILE__$/{found=NR} END{print found}' <<<"$rendered")"
+  [[ -n "$tail" ]]
+  invocation_block="$(tail -n +"$tail" <<<"$rendered")"
+  grep -q '/opt/herm/scripts/01-mount-disk.sh$' <<<"$invocation_block"
+  grep -q '/opt/herm/scripts/05-tailscale-join.sh$' <<<"$invocation_block"
+  grep -q '/opt/herm/scripts/99-systemd-units.sh$' <<<"$invocation_block"
 }

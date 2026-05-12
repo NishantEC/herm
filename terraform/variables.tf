@@ -45,9 +45,9 @@ variable "tailscale_auth_key" {
   description = "Single-use ephemeral Tailscale auth key. Stored in Secret Manager."
 }
 
-variable "cloud_init_user_data" {
+variable "startup_script" {
   type        = string
-  description = "Rendered cloud-init YAML for the VM. Populated by cli/commands/up.sh via TF_VAR_cloud_init_user_data (it inlines base64-encoded scripts + systemd units from cloud-init/scripts/ and systemd/)."
+  description = "Rendered GCE startup script for the VM. Populated by cli/commands/up.sh via TF_VAR_startup_script — it concatenates the scripts under cloud-init/scripts/ and the unit files under systemd/ into one bash script. Bound to the `startup-script` metadata key (which google-startup-scripts.service runs on first boot)."
 }
 
 # Tailscale ACL tag and monthly budget live in ~/.config/herm/config.toml and

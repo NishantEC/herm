@@ -44,13 +44,12 @@ herm::cmd::up() {
     herm::die "no auth key provided"
   fi
 
-  # Render cloud-init.yaml by inlining base64-encoded scripts and units.
-  # Terraform consumes this via TF_VAR_cloud_init_user_data (see terraform/vm.tf);
-  # reading cloud-init/cloud-init.yaml directly would leave BASE64_* placeholders
-  # literal and silently break cloud-init on first boot.
+  # Render the GCE startup script by inlining the per-step scripts and systemd
+  # units. Terraform consumes this via TF_VAR_startup_script (see vm.tf); the
+  # script runs on first boot via google-startup-scripts.service.
   local rendered
-  rendered="$(herm::__render_cloud_init)"
-  export TF_VAR_cloud_init_user_data="$rendered"
+  rendered="$(herm::__render_startup_script)"
+  export TF_VAR_startup_script="$rendered"
 
   # Drop into terraform/. Use a per-project state bucket.
   local state_bucket="${project_id}-herm-tfstate"
@@ -75,43 +74,70 @@ herm::cmd::up() {
 
   herm::tf "${apply_args[@]}"
 
-  unset TF_VAR_cloud_init_user_data
+  unset TF_VAR_startup_script
 
   herm::log "VM provisioned. Cloud-init takes ~6–10 min on cold boot."
   herm::log "Watch progress with: gcloud compute instances get-serial-port-output $hostname --zone $zone --project $project_id"
 }
 
-# Render cloud-init.yaml by base64-encoding each script and unit, replacing the BASE64_* placeholders.
-herm::__render_cloud_init() {
-  local template="$HERM_REPO_ROOT/cloud-init/cloud-init.yaml"
+# Render a single bash startup script by inlining each step under
+# cloud-init/scripts/ and each systemd unit under systemd/. GCE's
+# google-startup-scripts.service runs this verbatim as root on first boot.
+#
+# Each inlined file is wrapped in a single-quoted heredoc (`<<'__HERM_FILE__'`)
+# so the outer script does not expand `$VAR` references in the inlined content
+# — the inner scripts run after they are on disk and expand their own vars then.
+herm::__render_startup_script() {
   local script_dir="$HERM_REPO_ROOT/cloud-init/scripts"
   local unit_dir="$HERM_REPO_ROOT/systemd"
 
-  local content
-  content="$(<"$template")"
-
-  local mappings=(
-    "BASE64_01:$script_dir/01-mount-disk.sh"
-    "BASE64_02:$script_dir/02-create-user.sh"
-    "BASE64_03:$script_dir/03-install-base.sh"
-    "BASE64_04:$script_dir/04-install-hermes.sh"
-    "BASE64_05:$script_dir/05-tailscale-join.sh"
-    "BASE64_99:$script_dir/99-systemd-units.sh"
-    "BASE64_UNIT_HERMES:$unit_dir/hermes-agent.service"
-    "BASE64_UNIT_BACKUP_SVC:$unit_dir/herm-backup.service"
-    "BASE64_UNIT_BACKUP_TIMER:$unit_dir/herm-backup.timer"
+  # dest:src:mode triples for every file the startup script should write.
+  local files=(
+    "/opt/herm/scripts/01-mount-disk.sh:$script_dir/01-mount-disk.sh:0755"
+    "/opt/herm/scripts/02-create-user.sh:$script_dir/02-create-user.sh:0755"
+    "/opt/herm/scripts/03-install-base.sh:$script_dir/03-install-base.sh:0755"
+    "/opt/herm/scripts/04-install-hermes.sh:$script_dir/04-install-hermes.sh:0755"
+    "/opt/herm/scripts/05-tailscale-join.sh:$script_dir/05-tailscale-join.sh:0755"
+    "/opt/herm/scripts/99-systemd-units.sh:$script_dir/99-systemd-units.sh:0755"
+    "/etc/systemd/system/hermes-agent.service:$unit_dir/hermes-agent.service:0644"
+    "/etc/systemd/system/herm-backup.service:$unit_dir/herm-backup.service:0644"
+    "/etc/systemd/system/herm-backup.timer:$unit_dir/herm-backup.timer:0644"
   )
 
-  local m placeholder path encoded
-  for m in "${mappings[@]}"; do
-    placeholder="${m%%:*}"
-    path="${m#*:}"
-    if [[ ! -f $path ]]; then
-      herm::die "missing source file for $placeholder: $path"
+  # Preamble: standard hardening, log file, dirs.
+  cat <<'__HERM_PREAMBLE__'
+#!/bin/bash
+# herm — GCE startup script (rendered by cli/commands/up.sh).
+# Runs once on first boot via google-startup-scripts.service.
+set -euo pipefail
+exec > >(tee -a /var/log/herm-startup.log) 2>&1
+echo "[herm] startup begin at $(date -Iseconds)"
+mkdir -p /opt/herm/scripts /etc/systemd/system
+__HERM_PREAMBLE__
+
+  # Inline each file.
+  local entry dest src mode
+  for entry in "${files[@]}"; do
+    IFS=':' read -r dest src mode <<<"$entry"
+    if [[ ! -f $src ]]; then
+      herm::die "missing source file: $src"
     fi
-    encoded="$(base64 -w 0 "$path" 2>/dev/null || base64 < "$path" | tr -d '\n')"
-    content="${content//$placeholder/$encoded}"
+    printf "\ncat > %s <<'__HERM_FILE__'\n" "$dest"
+    cat "$src"
+    printf "__HERM_FILE__\nchmod %s %s\n" "$mode" "$dest"
   done
 
-  printf '%s' "$content"
+  # Run the per-step scripts in order. 99-systemd-units.sh both writes the
+  # unit-enable commands and finishes the bootstrap.
+  cat <<'__HERM_RUN__'
+
+/opt/herm/scripts/01-mount-disk.sh
+/opt/herm/scripts/02-create-user.sh
+/opt/herm/scripts/03-install-base.sh
+/opt/herm/scripts/04-install-hermes.sh
+/opt/herm/scripts/05-tailscale-join.sh
+/opt/herm/scripts/99-systemd-units.sh
+
+echo "[herm] startup complete at $(date -Iseconds)"
+__HERM_RUN__
 }
