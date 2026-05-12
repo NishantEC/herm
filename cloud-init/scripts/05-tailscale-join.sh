@@ -30,8 +30,12 @@ tailscale up \
   --authkey="$AUTH_KEY" \
   --hostname="$HOSTNAME" \
   --ssh \
-  --accept-routes=false \
-  --advertise-tags="tag:herm-vm"
+  --accept-routes=false
+# Note: no --advertise-tags. Tags must be predeclared in the tailnet's
+# ACL (tagOwners block) before they can be advertised by a node. v0.1
+# joins as a regular personal node under the owner's identity; if you
+# later want tag:herm-vm-style ACL-based isolation, add the tag to
+# https://login.tailscale.com/admin/acls and rerun with the flag.
 
 # Verify join succeeded:
 if ! tailscale status >/dev/null 2>&1; then
