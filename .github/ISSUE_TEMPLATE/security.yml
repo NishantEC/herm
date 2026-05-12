@@ -6,5 +6,5 @@ body:
     attributes:
       value: |
         **Stop.** Do not file security issues in the public tracker. Open a private advisory:
-        https://github.com/<yourname>/herm/security/advisories/new
+        https://github.com/NishantEC/herm/security/advisories/new
         See `SECURITY.md` for the full process.

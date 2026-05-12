@@ -29,7 +29,7 @@ The VM has no public IP and is only reachable via your Tailscale tailnet. See [`
 ## Quickstart
 
 ```bash
-git clone https://github.com/<yourname>/herm.git
+git clone https://github.com/NishantEC/herm.git
 cd herm
 make install                   # symlinks bin/herm into ~/.local/bin
 herm init                      # one-time: configures ~/.config/herm/config.toml

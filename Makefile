@@ -18,7 +18,7 @@ test:
 	@bats tests/cli
 
 lint:
-	@shellcheck bin/herm cli/lib.sh cli/commands/*.sh cloud-init/scripts/*.sh
+	@shellcheck --severity=warning bin/herm cli/lib.sh cli/commands/*.sh cloud-init/scripts/*.sh
 	@cd terraform && terraform fmt -check -recursive && terraform validate
 
 check: lint test

@@ -4,7 +4,7 @@
 
 Please **do not** open a public GitHub issue for security problems. Instead:
 
-1. Open a private GitHub Security Advisory at https://github.com/<yourname>/herm/security/advisories/new
+1. Open a private GitHub Security Advisory at https://github.com/NishantEC/herm/security/advisories/new
 2. Include reproduction steps, affected versions, and the impact you observed.
 
 I aim to acknowledge reports within 72 hours and to publish a fix or mitigation within 14 days for high-severity issues.

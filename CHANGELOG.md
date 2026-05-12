@@ -13,4 +13,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `herm` CLI with `init`, `up`, `down`, `nuke`, `status`, `ssh` subcommands.
 - CI: shellcheck, terraform fmt/validate/tflint, trivy, gitleaks, markdownlint.
 
-[Unreleased]: https://github.com/<yourname>/herm/commits/main
+[Unreleased]: https://github.com/NishantEC/herm/commits/main
