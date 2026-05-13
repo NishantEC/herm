@@ -101,6 +101,7 @@ herm::__render_startup_script() {
     "/opt/herm/scripts/04-install-hermes.sh:$script_dir/04-install-hermes.sh:0755"
     "/opt/herm/scripts/05-tailscale-join.sh:$script_dir/05-tailscale-join.sh:0755"
     "/opt/herm/scripts/07-seed-skills.sh:$script_dir/07-seed-skills.sh:0755"
+    "/opt/herm/scripts/10-install-cli-fleet.sh:$script_dir/10-install-cli-fleet.sh:0755"
     "/opt/herm/scripts/08-tool-allowlist.sh:$script_dir/08-tool-allowlist.sh:0755"
     "/opt/herm/scripts/09-install-reaper.sh:$script_dir/09-install-reaper.sh:0755"
     "/opt/herm/scripts/99-systemd-units.sh:$script_dir/99-systemd-units.sh:0755"
@@ -172,6 +173,7 @@ __HERM_PREAMBLE__
 /opt/herm/scripts/04-install-hermes.sh
 /opt/herm/scripts/05-tailscale-join.sh
 /opt/herm/scripts/07-seed-skills.sh
+/opt/herm/scripts/10-install-cli-fleet.sh
 /opt/herm/scripts/08-tool-allowlist.sh
 /opt/herm/scripts/09-install-reaper.sh
 /opt/herm/scripts/99-systemd-units.sh
