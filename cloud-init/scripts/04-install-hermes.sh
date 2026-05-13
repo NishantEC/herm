@@ -19,12 +19,17 @@ if [[ ! -x /home/herm/.local/bin/hermes ]]; then
   exit 1
 fi
 
-# The Hermes Agent base install ships without the anthropic Python SDK; the
-# Anthropic provider needs it. Without this step, /v1/chat/completions calls
-# 500 with "The 'anthropic' package is required for the Anthropic provider."
+# The Hermes Agent base install ships without provider SDKs / platform
+# adapters. We install:
+#   * anthropic        — Anthropic provider, used by default model claude-sonnet-4-6
+#   * slack-bolt + sdk — Slack Socket Mode adapter; logs a warning at
+#                        startup and refuses to bind to the slack toolset if
+#                        these are missing.
 sudo -u "$HERMES_USER" -H /home/herm/.local/bin/uv pip install \
   --python /home/herm/.hermes/hermes-agent/venv/bin/python \
-  'anthropic>=0.39.0'
+  'anthropic>=0.39.0' \
+  'slack-bolt>=1.28.0' \
+  'slack-sdk>=3.41.0'
 
 # Per-user .env that the API server reads.
 sudo -u "$HERMES_USER" -H bash <<'EOSU'

@@ -22,7 +22,8 @@ disabled_toolsets:
   - matrix            # external messaging
   - minecraft-modpack-server   # niche
   - pokemon-player    # niche
-  - slack             # external messaging — not wired
+  # slack             # ENABLED — Socket Mode adapter via slack-bolt. Set
+  #                   SLACK_BOT_TOKEN + SLACK_APP_TOKEN in ~/.hermes/.env.
   - telegram          # external messaging — not wired
   - whatsapp          # external messaging — not wired
   - tts               # text-to-speech — cost without value yet

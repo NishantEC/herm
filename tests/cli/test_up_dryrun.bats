@@ -39,6 +39,9 @@ setup() {
   grep -q '/opt/herm/config/hermes-tools.yaml <<' <<<"$rendered"
   grep -Fq 'disabled_toolsets:' <<<"$rendered"
   grep -Fq 'computer_use' <<<"$rendered"
+  # slack is intentionally not in the disabled list anymore — it's enabled
+  # via Socket Mode when SLACK_BOT_TOKEN/SLACK_APP_TOKEN are present.
+  ! grep -E '^\s+- slack$' <<<"$rendered"
 }
 
 @test "render_startup_script inlines every shipped skill SKILL.md" {
