@@ -4,20 +4,17 @@
 # transport and drops the owner into the auth flow.
 
 herm::__login_run() {
-  # Run a command on the VM via IAP SSH, with allocated tty for interactive flows.
+  # Run a command on the VM via Tailscale SSH as the herm user. Tailscale SSH
+  # is the path that works regardless of GCP org-level OS Login policies;
+  # gcloud compute ssh --tunnel-through-iap fails on projects where the org
+  # has restricted roles/compute.osLoginExternalUser.
   local cmd="$1"
-  local project_id zone hostname
-  project_id="$(herm::read_config "$HERM_CONFIG_PATH" gcp project_id)"
-  zone="$(herm::read_config "$HERM_CONFIG_PATH" gcp zone)"
+  local hostname
   hostname="$(herm::read_config "$HERM_CONFIG_PATH" tailscale hostname)"
 
-  herm::require_cmd gcloud
+  herm::require_cmd tailscale
   herm::log "running on $hostname: $cmd"
-  gcloud compute ssh "$hostname" \
-    --project "$project_id" \
-    --zone "$zone" \
-    --tunnel-through-iap \
-    -- -t "sudo -u herm -H bash -lc '$cmd'"
+  tailscale ssh "herm@$hostname" -- bash -lc "$cmd"
 }
 
 herm::cmd::login() {
