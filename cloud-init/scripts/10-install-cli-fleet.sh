@@ -11,8 +11,6 @@
 set -euo pipefail
 
 HERMES_USER="herm"
-HERM_NPM="/home/herm/.hermes/node/bin/npm"
-HERM_BIN="/home/herm/.local/bin"
 
 sudo -u "$HERMES_USER" -H bash <<'EOSU'
 set -euo pipefail
