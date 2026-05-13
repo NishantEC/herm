@@ -175,6 +175,7 @@ __HERM_PREAMBLE__
 /opt/herm/scripts/05-tailscale-join.sh
 /opt/herm/scripts/07-seed-skills.sh
 /opt/herm/scripts/10-install-cli-fleet.sh
+/opt/herm/scripts/11-seed-mcp-servers.sh
 /opt/herm/scripts/08-tool-allowlist.sh
 /opt/herm/scripts/09-install-reaper.sh
 /opt/herm/scripts/99-systemd-units.sh
