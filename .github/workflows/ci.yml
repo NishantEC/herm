@@ -38,7 +38,7 @@ jobs:
 
       - name: bats (cli)
         run: |
-          npm install -g bats
+          sudo apt-get update -qq && sudo apt-get install -y -qq bats
           bats tests/cli
 
       - uses: hashicorp/setup-terraform@v3
