@@ -22,8 +22,8 @@ teardown() { rm -rf "$TMP"; }
 @test "herm skills list deploys engine then runs list" {
   run "$REPO/bin/herm" skills list
   [ "$status" -eq 0 ]
-  grep -q 'tar xzf - -C /home/herm/.hermes/skillpm' "$TMP/ts.log"   # engine pushed
-  grep -q 'tar xzf - -C /home/herm/.hermes/skill-catalog' "$TMP/ts.log"  # catalog pushed
+  grep -q -- '-C /home/herm/.hermes/skillpm' "$TMP/ts.log"        # engine pushed
+  grep -q -- '-C /home/herm/.hermes/skill-catalog' "$TMP/ts.log"  # catalog pushed
   grep -q -- '-m skillpm list' "$TMP/ts.log"
 }
 

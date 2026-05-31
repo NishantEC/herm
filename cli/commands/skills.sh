@@ -13,9 +13,10 @@ HERM_VENV_PY=/home/herm/.hermes/hermes-agent/venv/bin/python
 # SSH (clean replace; no rsync/scp dependency, no root).
 herm::__skills_push() {
   local host="$1" src="$2" dest="$3"
-  tar czf - -C "$src" --exclude='__pycache__' --exclude='.DS_Store' . \
+  COPYFILE_DISABLE=1 tar czf - -C "$src" \
+    --exclude='__pycache__' --exclude='.DS_Store' --exclude='._*' . \
     | tailscale ssh "herm@$host" -- \
-        "rm -rf $dest && mkdir -p $dest && tar xzf - -C $dest"
+        "rm -rf $dest && mkdir -p $dest && tar xzf - --warning=no-unknown-keyword -C $dest"
 }
 
 herm::__skills_deploy() {
