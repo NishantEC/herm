@@ -105,6 +105,8 @@ curl -sS -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 
 See [`docs/skills.md`](docs/skills.md) for the format, how to add your own, and the tool-allowlist intersection rules.
 
+Manage the active set at runtime from your laptop with `herm skills {list|sync|enable|disable}` — skills are reconciled from a lockfile, not blind-copied.
+
 ## Integrations
 
 Beyond the gateway and skills, first boot wires up three integration layers. All are opt-in by token — nothing reaches the network until you paste credentials.

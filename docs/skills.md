@@ -62,7 +62,22 @@ EOF
 pkill -9 -f 'hermes gateway'   # systemd respawns; skill auto-discovers
 ```
 
-User-authored skills under `~/.hermes/skills/<not-herm>/` are preserved across `herm up`/`herm down` cycles because they live on the persistent disk. The `herm/` subdirectory is reserved for skills shipped by this repo and gets `rsync --delete`'d on each `herm upgrade`.
+User-authored skills under `~/.hermes/skills/<not-herm>/` are preserved across `herm up`/`herm down` cycles because they live on the persistent disk. The `herm/` subdirectory is reserved for skills shipped by this repo and is reconciled (via `skillpm sync`) on each `herm upgrade`.
+
+## Managing skills with `herm skills`
+
+Skills are reconciled from a lockfile (`~/.hermes/skills/herm/skills.toml`) by the
+`skillpm` engine, not blind-copied. Manage them from your laptop:
+
+| Command | Effect |
+|---|---|
+| `herm skills list` | Show each skill, its source, and enabled/live state. |
+| `herm skills sync` | Reconcile the VM's `herm/` skills to the lockfile. |
+| `herm skills enable <name>` | Enable a skill and reconcile. |
+| `herm skills disable <name>` | Disable a skill (removes it from the live set) and reconcile. |
+
+On first boot (or an upgrade from the old seeder) with no lockfile, `skillpm`
+seeds every catalog skill enabled — identical to the previous behavior.
 
 ## Cron skills
 
