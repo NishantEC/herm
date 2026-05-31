@@ -5,11 +5,13 @@ import sys
 
 from . import engine
 
-USAGE = "usage: skillpm {list | sync | enable <name> | disable <name>}"
+USAGE = "usage: skillpm {list | sync | enable <name> | disable <name>} [--reload]"
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    reload = "--reload" in argv
+    argv = [a for a in argv if a != "--reload"]
     if not argv:
         print(USAGE, file=sys.stderr)
         return 2
@@ -17,12 +19,14 @@ def main(argv: list[str] | None = None) -> int:
     cmd, rest = argv[0], argv[1:]
 
     if cmd == "sync":
-        s = engine.sync(paths)
+        s = engine.sync(paths, reload=reload)
         print(f"[skillpm] sync: +{len(s['installed'])} -{len(s['removed'])} ={len(s['kept'])}")
         for n in s["installed"]:
             print(f"  + {n}")
         for n in s["removed"]:
             print(f"  - {n}")
+        if s.get("reload"):
+            print(f"[skillpm] reloaded: {s['reload']}")
         return 0
 
     if cmd == "list":
@@ -35,10 +39,13 @@ def main(argv: list[str] | None = None) -> int:
         if not rest:
             print(USAGE, file=sys.stderr)
             return 2
-        if not engine.toggle(paths, rest[0], cmd == "enable"):
+        if not engine.toggle(paths, rest[0], cmd == "enable", reload=reload):
             print(f"[skillpm] unknown skill: {rest[0]}", file=sys.stderr)
             return 2
-        print(f"[skillpm] {rest[0]} {cmd}d")
+        msg = f"[skillpm] {rest[0]} {cmd}d"
+        if reload:
+            msg += " + gateway reloaded"
+        print(msg)
         return 0
 
     print(f"[skillpm] unknown command: {cmd}\n{USAGE}", file=sys.stderr)
