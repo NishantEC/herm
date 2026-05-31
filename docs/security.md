@@ -34,6 +34,7 @@ This document lists every defensive control v0.1 ships with. Pair it with `docs/
 Hermes Agent v0.13.0 ships with 22+ toolsets. v0.2 disables the ones we don't need in the default deployment by writing to `agent.disabled_toolsets` in `/home/herm/.hermes/config.yaml`. The policy lives in `config/hermes-tools.yaml` in the repo and is applied by `cloud-init/scripts/08-tool-allowlist.sh` on first boot.
 
 Disabled by default:
+
 - `browser-cdp` — full Chrome DevTools Protocol; way more surface than the in-process `browser` toolset.
 - `computer_use` — mouse/keyboard control on the host. Extreme blast radius on a VM that holds your `gh` token.
 - `discord`, `email`, `telegram`, `whatsapp`, `mattermost`, `matrix` — external messaging connectors. Not wired by default; enabling them connects your agent to chat platforms whose creds need their own threat model.

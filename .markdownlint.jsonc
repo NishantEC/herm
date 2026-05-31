@@ -1,0 +1,15 @@
+// markdownlint config for herm.
+// The docs are prose-first (one sentence per line, long paragraphs) and include
+// GitHub templates; the rules below conflict with that deliberate house style,
+// not with doc quality. Everything else stays on at markdownlint defaults
+// (blank-line, bare-URL, list-spacing rules are kept and the docs conform to them).
+{
+  "MD013": false,                     // line length — house style uses long lines
+  "MD024": { "siblings_only": true }, // repeated section names across CHANGELOG versions are fine
+  "MD033": false,                     // inline HTML (e.g. <details>/<summary> in the PR template)
+  "MD040": false,                     // not every fenced block has a language
+  "MD041": false,                     // first line need not be an H1 (templates/partials)
+  "MD060": false,                     // compact table pipe style is used throughout
+  "MD010": { "code_blocks": false },  // hard tabs inside code blocks are intentional
+  "MD036": false                      // design docs use bold lead-ins as sub-labels
+}

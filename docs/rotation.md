@@ -37,7 +37,7 @@ Update wherever you had the old token:
 ## What `herm rotate` does NOT touch
 
 - Your Anthropic OAuth token (`sk-ant-oat01-...`). Rotate that via `claude logout` + `claude setup-token`.
-- GitHub PATs (`ghp_...`). Rotate at https://github.com/settings/tokens.
+- GitHub PATs (`ghp_...`). Rotate at <https://github.com/settings/tokens>.
 - Tailscale auth keys (already single-use; consumed at first node join).
 - Provider API keys in `~/.hermes/.env` (`OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`). Edit `.env` directly and `pkill -9 -f 'hermes gateway'`.
 

@@ -189,6 +189,7 @@ herm skills sync                  # reconcile VM to lockfile (also boot + `herm 
 ```
 
 `<name|path|url>` resolution order for `add`:
+
 1. existing **catalog** skill name (`/opt/herm/skills/<name>`),
 2. a **local** path that exists on the laptop (file/dir),
 3. a **git URL** (`https://…`, `git@…`, `…#subdir`, `…@ref`),

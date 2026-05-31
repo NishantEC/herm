@@ -29,6 +29,7 @@ gcloud compute ssh herm-vm --zone <zone> --tunnel-through-iap -- sudo journalctl
 ```
 
 Common causes:
+
 - Tailscale auth key expired or was already used (they're single-use). Generate a fresh one and rerun `herm up`.
 - The Secret Manager secret was created by a different service account. Run `herm nuke && herm up` to reset.
 

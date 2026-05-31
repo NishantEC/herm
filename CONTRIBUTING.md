@@ -21,6 +21,7 @@ Conventional Commits style (`feat:`, `fix:`, `docs:`, `chore:`). Keep the first 
 ## Cost & risk
 
 Many changes here can cost real GCP money if they're wrong. PRs that touch Terraform should either:
+
 - Include `terraform plan` output in the description, or
 - Note explicitly that the change is plan-only with no `apply` impact.
 

@@ -36,6 +36,7 @@
 ## Task 1: Lockfile module
 
 **Files:**
+
 - Create: `skillpm/__init__.py`
 - Create: `skillpm/lockfile.py`
 - Test: `tests/skillpm/test_lockfile.py`
@@ -176,6 +177,7 @@ git commit -m "feat(skillpm): lockfile read/emit for skills.toml"
 ## Task 2: Catalog discovery
 
 **Files:**
+
 - Create: `skillpm/catalog.py`
 - Test: `tests/skillpm/test_catalog.py`
 
@@ -242,6 +244,7 @@ git commit -m "feat(skillpm): catalog skill discovery"
 ## Task 3: Reconciler
 
 **Files:**
+
 - Create: `skillpm/reconcile.py`
 - Test: `tests/skillpm/test_reconcile.py`
 
@@ -356,6 +359,7 @@ git commit -m "feat(skillpm): namespace-safe reconcile"
 ## Task 4: Engine + CLI entrypoint (with back-compat seed)
 
 **Files:**
+
 - Create: `skillpm/engine.py`
 - Create: `skillpm/__main__.py`
 - Test: `tests/skillpm/test_engine.py`
@@ -553,6 +557,7 @@ git commit -m "feat(skillpm): engine ops + python -m skillpm CLI with back-compa
 ## Task 5: Rewrite the boot reconciler
 
 **Files:**
+
 - Modify: `cloud-init/scripts/07-seed-skills.sh` (full replace)
 
 - [ ] **Step 1: Replace the script body**
@@ -605,6 +610,7 @@ git commit -m "feat(07-seed-skills): reconcile via skillpm instead of blind rsyn
 ## Task 6: Ship `skillpm/` to the VM via the startup-script renderer
 
 **Files:**
+
 - Modify: `cli/commands/up.sh` (`herm::__render_startup_script`)
 
 - [ ] **Step 1: Add the skillpm dir to the preamble `mkdir`**
@@ -657,6 +663,7 @@ git commit -m "feat(up): ship skillpm engine to /opt/herm/skillpm on boot"
 ## Task 7: `herm skills` bash wrapper + dispatch
 
 **Files:**
+
 - Create: `cli/commands/skills.sh`
 - Modify: `bin/herm` (case-list + help)
 - Test: `tests/cli/test_skills.bats`
@@ -787,6 +794,7 @@ git commit -m "feat(cli): herm skills wrapper (list/sync/enable/disable)"
 ## Task 8: CI — add a pytest job
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml`
 
 - [ ] **Step 1: Add a `pytest` job**
@@ -822,6 +830,7 @@ git commit -m "ci: run skillpm pytest suite"
 ## Task 9: Documentation
 
 **Files:**
+
 - Modify: `docs/skills.md` (add the `herm skills` section)
 - Modify: `README.md` (Skills section — mention the CLI)
 - Modify: `CHANGELOG.md` (`[Unreleased]`)

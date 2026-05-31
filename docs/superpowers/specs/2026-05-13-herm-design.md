@@ -103,42 +103,50 @@ When the user messages `nishant-agent` ("review this PR"), Multica routes the ti
 ### 5.1 Essential controls (always on, baked into `herm up`)
 
 **Network exposure**
+
 - VM has no external IP. Only reachable on the tailnet.
 - VPC firewall denies all ingress by default. Egress open.
 - Tailscale ACL locks the VM to tagged owner devices only, on `:22`, `:3000`, `:7681`, `:8642`, `:8643`.
 - Tailscale auth key is a single-use ephemeral key (configured with `reusable=false`, `ephemeral=true`); the VM joins as an ephemeral node that auto-removes from the tailnet on disconnect. Cloud-init deletes the Secret Manager entry after a successful join.
 
 **Identity**
+
 - Dedicated `herm-vm` service account. Scoped IAM: `secretmanager.secretAccessor` on specific secrets only; `storage.objectAdmin` on the one backup bucket only. No project-level roles.
 - OS Login enabled. SSH is gated by Google identity + 2FA.
 
 **Data at rest**
+
 - All agent processes run as the unprivileged `herm` user (never root). Credentials in `/home/herm/.config/...` with `0700`/`0600`.
 - Persistent disk and GCS backup encrypted at rest (Google-managed key by default).
 - GCS bucket: uniform bucket-level access, object versioning enabled, private only.
 - Secret Manager holds only the Tailscale bootstrap key (auto-deleted post-use) and the Hermes API server token.
 
 **Runtime hardening**
+
 - Each systemd unit runs with: `NoNewPrivileges=true`, `ProtectSystem=strict`, `ProtectHome=read-only` (with `/home/herm` explicitly writable), `PrivateTmp=true`, empty `CapabilityBoundingSet`, `RestrictSUIDSGID=true`, `LockPersonality=true`.
 - Agents never get sudo.
 - Per-turn wall-clock watchdog: any agent turn running >30 min receives SIGTERM.
 
 **Cost runaway**
+
 - GCP Budget alert configured at $25/mo by default (50/80/100% pings).
 - VM machine type locked in Terraform.
 - README reminds the owner to set per-provider spend caps in Anthropic/OpenAI/Gemini consoles.
 
 **Supply chain**
+
 - Every installed package pinned to an exact version in cloud-init.
 - No `curl | sh` from random hosts. Hashes verified where upstream publishes them.
 - Dependabot/Renovate PRs against the repo for version bumps, reviewed by the owner.
 
 **Auditability**
+
 - VM stdout/journald → Cloud Logging, 30-day retention.
 - Hermes API access logs persisted to disk + nightly GCS sync.
 - GCS Data Access logs enabled on the backup bucket.
 
 **Blast radius**
+
 - `herm down` actually deletes the VM (disk persists). Unused = zero attack surface.
 - Disk snapshot taken before `herm upgrade`. One-command rollback.
 

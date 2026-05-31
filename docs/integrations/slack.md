@@ -6,7 +6,7 @@ Hermes Agent talks to Slack via **Socket Mode** — Slack opens a WebSocket *to*
 
 | Thing | Where it comes from |
 |---|---|
-| Slack app | https://api.slack.com/apps — create from manifest (next section) |
+| Slack app | <https://api.slack.com/apps> — create from manifest (next section) |
 | `SLACK_BOT_TOKEN` (`xoxb-…`) | App's OAuth & Permissions → Install to Workspace |
 | `SLACK_APP_TOKEN` (`xapp-…`) | App's Basic Information → App-Level Tokens, scope `connections:write` |
 | `SLACK_ALLOWED_USERS` (**required**) | Comma-separated Slack member IDs (`U…`). Hermes defaults to **deny-all**: if this is unset, every DM gets logged as `Unauthorized user: U… on slack` and the bot silently drops the message (the typing indicator flashes then nothing). Set `GATEWAY_ALLOW_ALL_USERS=true` instead if you want open access (riskier — anyone in the workspace can talk to the bot). |
@@ -14,12 +14,14 @@ Hermes Agent talks to Slack via **Socket Mode** — Slack opens a WebSocket *to*
 ## One-time setup
 
 1. **On the VM**, generate the Slack app manifest:
+
    ```bash
    tailscale ssh herm@herm-vm 'hermes slack manifest --write && cat ~/.hermes/slack-manifest.json' | pbcopy
    ```
+
    The manifest is now on your Mac clipboard.
 
-2. **In your browser**, open https://api.slack.com/apps → **Create New App** → **From an app manifest** → choose your workspace → paste → **Create**.
+2. **In your browser**, open <https://api.slack.com/apps> → **Create New App** → **From an app manifest** → choose your workspace → paste → **Create**.
 
 3. **In the new Slack app's admin UI**:
    - **OAuth & Permissions** → **Install to Workspace** → approve → copy the `xoxb-…` token.
@@ -27,11 +29,14 @@ Hermes Agent talks to Slack via **Socket Mode** — Slack opens a WebSocket *to*
    - Find your member ID: click your avatar in Slack → **Profile** → **More** (⋯) → **Copy member ID** (`U…`).
 
 4. **On the VM**, append the tokens to `~/.hermes/.env`:
+
    ```bash
    tailscale ssh herm@herm-vm
    nano ~/.hermes/.env
    ```
+
    Add three lines (replace placeholders with your real tokens):
+
    ```
    SLACK_BOT_TOKEN=xoxb-...
    SLACK_APP_TOKEN=xapp-...
@@ -39,15 +44,19 @@ Hermes Agent talks to Slack via **Socket Mode** — Slack opens a WebSocket *to*
    ```
 
 5. **Restart Hermes**:
+
    ```bash
    pkill -9 -f 'hermes gateway'
    ```
+
    systemd respawns it within ~5s. The slack adapter loads on startup if both tokens are present.
 
 6. **Verify** via the log:
+
    ```bash
    tail -5 ~/.hermes/logs/agent.log | grep -i slack
    ```
+
    Look for `[Slack] Authenticated as @<botname> in workspace <name>` and `✓ slack connected`.
 
 ## Talking to the bot

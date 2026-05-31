@@ -6,11 +6,11 @@
 
 ---
 
-### Cost
+## Cost
 
 `herm` runs a real GCP VM. Expect **~$13/month at idle** plus your LLM API costs. Set a [GCP budget alert](https://cloud.google.com/billing/docs/how-to/budgets) before running this — `herm` configures one at $25/mo by default, but you should pick your own ceiling.
 
-### Security
+## Security
 
 `herm` installs an autonomous AI agent with shell access on a VM that will hold your GitHub OAuth token (in later versions). Read [`docs/threat-model.md`](docs/threat-model.md) before running this.
 
