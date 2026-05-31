@@ -4,6 +4,31 @@
 **Date:** 2026-05-31
 **Supersedes:** the boot-only skill seeding in `cloud-init/scripts/07-seed-skills.sh`
 
+## Revision — 2026-05-31 (built, then revised to self-deploying)
+
+After building Phase 1 and trying it on the live VM, two rough edges drove a
+cleaner design. The following **supersede** the corresponding details below:
+
+- **Engine is herm-owned, not root-owned.** It lives at `~/.hermes/skillpm/`
+  (not `/opt/herm/skillpm`); catalog at `~/.hermes/skill-catalog/`; lockfile at
+  `~/.hermes/skill-lock.toml`. All on the persistent disk, all writable by the
+  `herm` user — **no root required**.
+- **Self-deploying over SSH.** `herm skills` pushes the engine + catalog from the
+  repo to the VM (a `tar` stream over `tailscale ssh`) on every command, so the
+  VM always runs current code. Works on a running/drifted VM with no reprovision;
+  cloud-init still installs the same paths at boot for fresh VMs. New subcommand:
+  `herm skills deploy`.
+- **Graceful gateway reload on mutations.** `sync`/`enable`/`disable` reload the
+  gateway so changes take effect immediately — `systemctl --user restart
+  hermes-gateway` when present, else a graceful `pkill -TERM` (never `-9`). Engine
+  flag `--reload`; the CLI passes it, the boot reconcile does not.
+- **Preserve-existing seed.** First run seeds the lockfile from the catalog
+  **union** the skills already present in the live dir (recorded `source=local`),
+  so a skill the owner added on the VM is never dropped by the first reconcile.
+- **Why:** `/opt/herm` is root-owned and this deployment has no sudo path (the
+  `herm` user has none by design; gcloud OS Login is org-restricted). A
+  herm-owned, self-deploying engine removes the root coupling entirely.
+
 ## Context
 
 Today every skill this repo ships lives in `skills/` and is `rsync`'d as one flat

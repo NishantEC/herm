@@ -59,25 +59,31 @@ model: claude-sonnet-4-6
 
 ...
 EOF
-pkill -9 -f 'hermes gateway'   # systemd respawns; skill auto-discovers
+pkill -TERM -f 'hermes gateway'   # graceful; systemd respawns; skill auto-discovers
 ```
 
 User-authored skills under `~/.hermes/skills/<not-herm>/` are preserved across `herm up`/`herm down` cycles because they live on the persistent disk. The `herm/` subdirectory is reserved for skills shipped by this repo and is reconciled (via `skillpm sync`) on each `herm upgrade`.
 
 ## Managing skills with `herm skills`
 
-Skills are reconciled from a lockfile (`~/.hermes/skills/herm/skills.toml`) by the
-`skillpm` engine, not blind-copied. Manage them from your laptop:
+The `skillpm` engine (herm-owned, at `~/.hermes/skillpm/`) reconciles the live
+skill set from a lockfile (`~/.hermes/skill-lock.toml`) — skills aren't blind-copied.
+`herm skills` pushes the engine + catalog to the VM over SSH on every command
+(**no root, no reprovision**) and manages skills from your laptop:
 
 | Command | Effect |
 |---|---|
-| `herm skills list` | Show each skill, its source, and enabled/live state. |
-| `herm skills sync` | Reconcile the VM's `herm/` skills to the lockfile. |
-| `herm skills enable <name>` | Enable a skill and reconcile. |
-| `herm skills disable <name>` | Disable a skill (removes it from the live set) and reconcile. |
+| `herm skills deploy` | Push the engine + catalog to the VM (herm-owned `~/.hermes/`). |
+| `herm skills list` | Deploy, then show each skill, its source, and enabled/live state. |
+| `herm skills sync` | Reconcile the live set to the lockfile, then reload the gateway. |
+| `herm skills enable <name>` | Enable a skill, reconcile, reload. |
+| `herm skills disable <name>` | Disable a skill (drop it from the live set), reconcile, reload. |
 
-On first boot (or an upgrade from the old seeder) with no lockfile, `skillpm`
-seeds every catalog skill enabled — identical to the previous behavior.
+Mutating commands restart the gateway gracefully (`systemctl --user restart
+hermes-gateway`, else a `SIGTERM` that systemd respawns) so changes take effect
+immediately. On first run with no lockfile, `skillpm` seeds the catalog **and
+preserves** any skills already on the VM (recorded as `source=local`), so nothing
+you added gets dropped.
 
 ## Cron skills
 
