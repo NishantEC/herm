@@ -2,7 +2,7 @@
 
 > Headless AI agent workstation on Google Cloud, tunneled to your devices via Tailscale.
 
-**⚠️ v0.2.0 — early but working.** Provisions a small GCP VM running [Hermes Agent](https://github.com/nousresearch/hermes-agent) v0.13.0, joins it to your tailnet, serves the OpenAI-compatible gateway at `:8642`, seeds 6 custom skills (`debug`, `review-pr`, `write-doc`, `update-deps`, `watch-repo`, `summarize-day`), and applies a hardening policy that disables 15 Hermes toolsets (full Chrome DevTools, computer-use, external messaging, etc.) by default.
+**⚠️ v0.2.0 — early but working.** Provisions a small GCP VM running [Hermes Agent](https://github.com/nousresearch/hermes-agent) v0.13.0, joins it to your tailnet, serves the OpenAI-compatible gateway at `:8642`, seeds 6 custom skills (`debug`, `review-pr`, `write-doc`, `update-deps`, `watch-repo`, `summarize-day`), installs a CLI fleet (`claude`, `gh`, `gemini`, `codex`, `opencode`) for the agent and you, registers MCP integrations (Asana, Linear, Figma), optionally wires a Slack bot over Socket Mode, and applies a hardening policy that disables 14 Hermes toolsets (full Chrome DevTools, computer-use, most external messaging, etc.) by default.
 
 ---
 
@@ -104,6 +104,30 @@ curl -sS -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
 | `summarize-day` | (no trigger — heartbeat) | 09:00 UTC daily |
 
 See [`docs/skills.md`](docs/skills.md) for the format, how to add your own, and the tool-allowlist intersection rules.
+
+## Integrations
+
+Beyond the gateway and skills, first boot wires up three integration layers. All are opt-in by token — nothing reaches the network until you paste credentials.
+
+### CLI fleet
+
+`cloud-init/scripts/10-install-cli-fleet.sh` installs the CLIs the agent's skills and you both use — `claude`, `gh`, `gemini`, `codex`, `opencode` — into the `herm` user's `~/.local/bin`. Each tool's login is a separate step: `herm login <provider>` (or log in directly over `tailscale ssh`). `goose` is intentionally deferred to `herm login goose` (its Debian installer needs different flags).
+
+### MCP servers
+
+`cloud-init/scripts/11-seed-mcp-servers.sh` registers three PAT-based MCP integrations in `~/.hermes/config.yaml` via community stdio servers (`npx`):
+
+| Integration | Token to fill in `~/.hermes/config.yaml` |
+|---|---|
+| Asana  | `mcp_servers.asana.env.ASANA_ACCESS_TOKEN` |
+| Linear | `mcp_servers.linear.env.LINEAR_API_KEY` |
+| Figma  | `mcp_servers.figma.env.FIGMA_API_KEY` |
+
+Tokens seed as `PASTE_PAT_HERE`. A server whose token is still unset fails soft — Hermes logs the attempt and starts without that toolset. Restart the gateway after editing: `pkill -9 -f 'hermes gateway'` (systemd respawns it).
+
+### Slack
+
+The `slack` toolset is enabled by default (Hermes' Socket Mode adapter) but dormant until you set `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, and `SLACK_ALLOWED_USERS` in `~/.hermes/.env`. Hermes defaults to **deny-all**, so `SLACK_ALLOWED_USERS` is required or every DM is silently dropped. See [`docs/integrations/slack.md`](docs/integrations/slack.md) for the app manifest and scopes.
 
 ## Architecture
 

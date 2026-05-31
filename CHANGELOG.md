@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **CLI fleet auto-install.** `cloud-init/scripts/10-install-cli-fleet.sh` installs `claude`, `gh`, `gemini`, `codex`, and `opencode` into the `herm` user's `~/.local/bin` on boot — for both the agent's skills and the owner. `goose` is left for `herm login goose` (its Debian installer has a tarball quirk). Each tool's auth is a separate `herm login <provider>` step.
+- **MCP integrations.** `cloud-init/scripts/11-seed-mcp-servers.sh` registers Asana, Linear, and Figma MCP servers (PAT-based community stdio servers over `npx`) in `~/.hermes/config.yaml`, seeded with `PASTE_PAT_HERE` placeholders. A server whose token is still unset fails soft at startup.
+- **Slack adapter (Socket Mode).** The `slack` toolset is enabled by default; set `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, and `SLACK_ALLOWED_USERS` in `~/.hermes/.env` to activate it. Hermes defaults to deny-all, so `SLACK_ALLOWED_USERS` is required. See `docs/integrations/slack.md`.
+
+### Changed
+
+- **`herm login` uses `tailscale ssh`** for on-VM auth flows instead of `gcloud compute ssh --tunnel-through-iap`.
+- **Tool policy: `slack` re-enabled.** `config/hermes-tools.yaml` no longer disables the `slack` toolset (previously grouped with the other external-messaging toolsets); the disabled list is now 14 toolsets.
+
 ## [0.2.0] - 2026-05-13
 
 Consolidates the original v0.2/v0.3/v0.4 roadmap into a single release. **Multica deferred to v0.3** after live research found the brainstorm's HTTP-bearer agent-registration assumption doesn't match Multica's actual architecture (task board over WebSocket + subprocess CLI dispatch). Hermes Agent v0.13.0 natively provides the four properties the brainstorm wanted from Multica (tickets via sessions, heartbeats via `cronjob` toolset, skills in Anthropic Agent-Skills format, A2 invisible-subagents via `delegation`), so v0.2 ships Hermes-native and Multica returns in v0.3 after source-reading. **Cloud NAT also deferred** — the ~$32/mo cost was rejected by the owner; egress-allowlist paranoid mode follows later.

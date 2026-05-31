@@ -36,11 +36,13 @@ Hermes Agent v0.13.0 ships with 22+ toolsets. v0.2 disables the ones we don't ne
 Disabled by default:
 - `browser-cdp` — full Chrome DevTools Protocol; way more surface than the in-process `browser` toolset.
 - `computer_use` — mouse/keyboard control on the host. Extreme blast radius on a VM that holds your `gh` token.
-- `discord`, `slack`, `email`, `telegram`, `whatsapp`, `mattermost`, `matrix` — external messaging connectors. Not wired in v0.2; enabling them connects your agent to chat platforms whose creds need their own threat model.
+- `discord`, `email`, `telegram`, `whatsapp`, `mattermost`, `matrix` — external messaging connectors. Not wired by default; enabling them connects your agent to chat platforms whose creds need their own threat model.
 - `godmode` — Hermes' built-in red-teaming skill. Explicit opt-in only.
 - `tts`, `voice` — cost without functional value in v0.2.
 - `xurl` — generic HTTP fetch. Bypasses the per-tool allowlists below it.
 - `minecraft-modpack-server`, `pokemon-player` — niche.
+
+`slack` is the one external-messaging connector left **enabled** (Hermes' Socket Mode adapter) — it's the supported owner↔agent channel. It stays dormant until you set `SLACK_BOT_TOKEN` + `SLACK_APP_TOKEN` in `~/.hermes/.env`. Treat those as credentials with real blast radius: Hermes defaults to **deny-all**, so without `SLACK_ALLOWED_USERS` every inbound DM is dropped, and anyone you add to that allowlist can drive the agent. See [`docs/integrations/slack.md`](integrations/slack.md).
 
 To re-enable any of these, remove the entry from `config/hermes-tools.yaml` and run `herm upgrade`. Or edit `~/.hermes/config.yaml` directly on the VM and `pkill -9 -f 'hermes gateway'`.
 
