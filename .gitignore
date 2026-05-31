@@ -32,3 +32,6 @@ coverage/
 *.pem
 *.key
 **/secrets/
+# Local working docs & vendored upstream — never publish
+HANDOFF.md
+.remote-mirror/
