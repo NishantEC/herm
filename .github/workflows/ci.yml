@@ -6,64 +6,70 @@ on:
   pull_request:
     branches: [main]
 
+# One run per ref; a newer push cancels the in-progress one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Everything runs as steps in a single job: one runner start, one checkout.
+# Far fewer billed job-minutes than the previous 7 separate jobs, and the work
+# itself is only a few seconds per tool.
 jobs:
-  shellcheck:
+  ci:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
         with:
-          scandir: '.'
-          severity: warning
-          ignore_paths: >-
-            .git
-            node_modules
+          fetch-depth: 0          # gitleaks scans full history
 
-  terraform:
-    runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: terraform
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.7.5"
-      - run: terraform fmt -check -recursive
-      - run: terraform init -backend=false
-      - run: terraform validate
-      - uses: terraform-linters/setup-tflint@v4
-        with:
-          tflint_version: v0.50.3
-      - run: tflint --init
-      - run: tflint --recursive
+      - name: ShellCheck (shellcheck is preinstalled on the runner)
+        run: shellcheck --severity=warning bin/herm $(git ls-files '*.sh')
 
-  bats:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y bats
-      - run: bats tests/cli
+      - name: markdownlint
+        run: npx -y markdownlint-cli2 "**/*.md" "#node_modules"
 
-  markdownlint:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          globs: |
-            **/*.md
-            !node_modules
-
-  pytest:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install pytest
-      - run: PYTHONPATH=. pytest tests/skillpm -v
+      - name: pytest (skillpm)
+        run: |
+          pip install --quiet pytest
+          PYTHONPATH=. pytest tests/skillpm -q
+
+      - name: bats (cli)
+        run: |
+          npm install -g bats
+          bats tests/cli
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+      - name: terraform fmt/validate
+        working-directory: terraform
+        run: |
+          terraform fmt -check -recursive
+          terraform init -backend=false
+          terraform validate
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.50.3
+      - name: tflint
+        working-directory: terraform
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: Trivy IaC scan
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: 'config'
+          scan-ref: 'terraform/'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+          trivyignores: '.trivyignore'
+
+      - name: gitleaks (secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
