@@ -1,27 +1,26 @@
 #!/usr/bin/env bash
-# Copy the repo's skills/ into /home/herm/.hermes/skills/herm/ so Hermes
-# auto-discovers them on next start. The herm/ subdirectory namespace
-# keeps our skills separate from upstream-bundled and user-authored ones.
+# Reconcile the herm skill set to the declarative lockfile via the skillpm engine.
+# Replaces the old blind rsync of /opt/herm/skills. Back-compat: on first boot
+# (no lockfile) skillpm seeds every catalog skill enabled — matching prior behavior.
 #
-# Idempotent. Doesn't overwrite user-authored skills outside herm/.
+# Idempotent. Operates only within ~/.hermes/skills/herm/; user-authored skills
+# in sibling namespaces are untouched.
 
 set -euo pipefail
 
-SRC="/opt/herm/skills"
-DEST="/home/herm/.hermes/skills/herm"
+PY=/home/herm/.hermes/hermes-agent/venv/bin/python
+SKILLPM=/opt/herm/skillpm
 
-if [[ ! -d $SRC ]]; then
-  echo "[07-seed-skills] no skills/ shipped — skipping"
+if [[ ! -x $PY ]]; then
+  echo "[07-seed-skills] no Hermes venv python — skipping"
+  exit 0
+fi
+if [[ ! -d $SKILLPM ]]; then
+  echo "[07-seed-skills] no skillpm shipped — skipping"
   exit 0
 fi
 
-mkdir -p "$DEST"
-chown -R herm:herm /home/herm/.hermes/skills
-
-# rsync with --delete only inside herm/, so user-authored skills under
-# /home/herm/.hermes/skills/<other-name>/ are preserved. --exclude='._*'
-# drops macOS AppleDouble files in case someone tar'd the payload on a
-# Mac without COPYFILE_DISABLE=1.
-sudo -u herm rsync -a --delete --exclude='._*' --exclude='.DS_Store' "$SRC/" "$DEST/"
-
-echo "[07-seed-skills] seeded $(find "$DEST" -name SKILL.md | wc -l | tr -d ' ') skills into $DEST"
+sudo -u herm \
+  PYTHONPATH=/opt/herm \
+  SKILLPM_CATALOG=/opt/herm/skills \
+  "$PY" -m skillpm sync
