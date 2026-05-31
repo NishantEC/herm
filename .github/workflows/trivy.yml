@@ -12,10 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Trivy IaC scan
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: 'config'
           scan-ref: 'terraform/'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
+          trivyignores: '.trivyignore'

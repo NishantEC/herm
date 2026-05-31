@@ -1,0 +1,10 @@
+# Accepted, documented risks for the Trivy IaC (config) scan of terraform/.
+#
+# AVD-GCP-0031 — "Instance has a public IP allocated" (vm.tf access_config).
+#   The VM gets an ephemeral external IPv4 purely for first-boot package fetches
+#   (apt / npm / Tailscale). It carries ZERO inbound attack surface: the VPC
+#   firewall denies ALL ingress from 0.0.0.0/0 and the node is reachable only on
+#   :22/:8642 via the Tailscale tailnet. v0.4 "paranoid mode" replaces this with
+#   no external IP + Cloud NAT + an egress allowlist. See README "Security",
+#   docs/security.md, and docs/threat-model.md.
+AVD-GCP-0031
