@@ -92,6 +92,7 @@ herm::__render_startup_script() {
   local unit_dir="$HERM_REPO_ROOT/systemd"
   local skills_dir="$HERM_REPO_ROOT/skills"
   local config_dir="$HERM_REPO_ROOT/config"
+  local skillpm_dir="$HERM_REPO_ROOT/skillpm"
 
   # dest:src:mode triples for every fixed-path file the startup script writes.
   local files=(
@@ -122,7 +123,7 @@ herm::__render_startup_script() {
 set -euo pipefail
 exec > >(tee -a /var/log/herm-startup.log) 2>&1
 echo "[herm] startup begin at $(date -Iseconds)"
-mkdir -p /opt/herm/scripts /opt/herm/skills /opt/herm/config /etc/systemd/system
+mkdir -p /opt/herm/scripts /opt/herm/skills /opt/herm/skillpm /opt/herm/config /etc/systemd/system
 __HERM_PREAMBLE__
 
   # Inline each fixed-path file.
@@ -140,7 +141,7 @@ __HERM_PREAMBLE__
   # Walk the skills/ tree and inline each SKILL.md (and any supporting files
   # next to it). Anthropic Agent-Skills spec: a skill is a directory containing
   # SKILL.md plus optional siblings. We replicate the directory layout under
-  # /opt/herm/skills/, then 07-seed-skills.sh rsync's it into the herm user's
+  # /opt/herm/skills/, then 07-seed-skills.sh reconciles it (via skillpm) into the
   # ~/.hermes/skills/herm/.
   if [[ -d $skills_dir ]]; then
     local skill_file rel skill_dest
@@ -152,6 +153,20 @@ __HERM_PREAMBLE__
       cat "$skill_file"
       printf "__HERM_SKILL_FILE__\nchmod 0644 %q\n" "$skill_dest"
     done < <(find "$skills_dir" -type f \( -name 'SKILL.md' -o -name '*.md' -o -name '*.txt' -o -name '*.json' -o -name '*.yaml' -o -name '*.yml' \))
+  fi
+
+  # Inline the skillpm engine (Python package) to /opt/herm/skillpm/, mirroring
+  # the skills-tree inlining above. Only *.py files are shipped.
+  if [[ -d $skillpm_dir ]]; then
+    local pm_file pm_rel pm_dest
+    while IFS= read -r pm_file; do
+      pm_rel="${pm_file#"$skillpm_dir"/}"
+      pm_dest="/opt/herm/skillpm/$pm_rel"
+      printf "\nmkdir -p %q\n" "$(dirname "$pm_dest")"
+      printf "cat > %q <<'__HERM_PM_FILE__'\n" "$pm_dest"
+      cat "$pm_file"
+      printf "__HERM_PM_FILE__\nchmod 0644 %q\n" "$pm_dest"
+    done < <(find "$skillpm_dir" -type f -name '*.py')
   fi
 
   # Read the reaper-enabled flag from config and export it so 09-install-reaper.sh
