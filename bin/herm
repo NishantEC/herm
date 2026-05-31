@@ -39,6 +39,9 @@ AUTH
   login <provider>   Run an interactive OAuth/device-code flow on the VM
                      providers: claude | gh | gemini | codex | opencode | goose | all
 
+SKILLS
+  skills <subcommand>   Manage the agent's skills (list | sync | enable | disable)
+
 MAINTENANCE
   rotate [target]    Rotate the Hermes API server token (target: hermes — default)
   upgrade            Snapshot disk, pull latest versions, restart, verify, auto-rollback on failure
@@ -59,7 +62,7 @@ case "$cmd" in
   help|-h|--help)
     usage
     ;;
-  init|up|down|nuke|status|ssh|login|open|qr|rotate|upgrade|backup|restore|logs|console)
+  init|up|down|nuke|status|ssh|login|open|qr|rotate|upgrade|backup|restore|logs|console|skills)
     cmd_file="$HERM_REPO_ROOT/cli/commands/${cmd}.sh"
     if [[ ! -f $cmd_file ]]; then
       herm::die "subcommand file missing: $cmd_file"
